@@ -256,9 +256,10 @@ h1{
     top:-5px;
 }
 .logoBig {
-    max-width:300px;
+        max-width: 140px;
     display:block;
     margin:0 auto;
+    margin-top:30px;
 }
 .poweredby{
     font-size: .8em!important;
@@ -335,7 +336,7 @@ a {
 }
 .nav-tabs>li>a{
   font-weight: bold;
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   text-transform: uppercase;
   padding: 10px 40px;
 }

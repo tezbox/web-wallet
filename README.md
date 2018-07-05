@@ -1,1 +1,1 @@
-# tezbox-light-wallet
+# TezBox Web Wallet

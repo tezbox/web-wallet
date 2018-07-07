@@ -213,7 +213,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         $scope.$apply(function(){
           $scope.accountLive = true;
           var rb = parseInt(r);
-          bal = eztz.utility.mintotz(rb); 
+          bal = Math.floor(rb/10000)/100; 
           var usdbal = bal * 1.78;
           $scope.accountDetails.raw_balance = rb;
           $scope.accountDetails.balance = window.eztz.utility.formatMoney(bal, 2, '.', ',')+"ꜩ";
@@ -223,7 +223,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         $scope.$apply(function(){
           $scope.accountLive = false;
           var rb = parseInt(0);
-          bal = eztz.utility.mintotz(rb); 
+          bal = Math.floor(rb/10000)/100; 
           var usdbal = bal * 1.78;
           $scope.accountDetails.raw_balance = rb;
           $scope.accountDetails.balance = window.eztz.utility.formatMoney(bal, 2, '.', ',')+"ꜩ";
@@ -241,10 +241,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     
     
     $scope.send = function(){
-      if (!$scope.amount || !$scope.toaddress) {
-        alert("Please enter amount and a destination");
-        return;
-      }
+      if (!$scope.amount || !$scope.toaddress) return alert("Please enter amount and a destination");
       if ($scope.amount < 0) return alert("Invalid amount entered - please enter a positive number");
       if ($scope.fee < 0) return alert("Invalid amount entered - please enter a positive number");
       if ($scope.amount != parseFloat($scope.amount)) return alert("Invalid amount entered - please enter a valid number");

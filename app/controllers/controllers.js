@@ -501,8 +501,9 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
         $location.path('/new');
     };
     $scope.restore = function(){
-        if ($scope.type == 'seed' && !$scope.seed) return alert("Please enter your seed words");
-        if ($scope.type == 'ico' && !$scope.seed) return alert("Please enter your seed words");
+        if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return alert("Please enter your seed words");
+        if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return alert("Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break");
+
         if ($scope.type == 'ico' && !$scope.ico_password) return alert("Please enter your passphrase");
         if ($scope.type == 'ico' && !$scope.email) return alert("Please enter your email from the ICO PDF");
         if ($scope.type == 'ico' && !$scope.address) return alert("Please enter your address/Public Key Hash from the ICO PDF");

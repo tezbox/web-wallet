@@ -4,6 +4,8 @@ app.service('Storage', function() {
     
     r.keys = {};
     r.password = '';
+    r.restored = false;
+    r.ico = false;
     r.setStore = function(v, k, p){
         localStorage.setItem('tbstore', JSON.stringify(v));
         if (typeof k != 'undefined') r.keys = k;

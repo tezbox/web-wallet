@@ -36,6 +36,13 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     }
     if (typeof ss.temp != 'undefined') delete ss.temp;
     
+    
+    if (Storage.restored){
+      if (Storage.ico) alert("You have successfully restored your wallet - please note that you will need to manually import any existing KT1 addresses by going to Options > Import. If you have just activated your account, please note that this may take some time to show.");
+      else alert("You have successfully restored your wallet - please note that you will need to manually import any existing KT1 addresses by going to Options > Import.");
+      Storage.restored = false;
+      Storage.ico = false;
+    }
     $scope.setting = Storage.loadSetting();
     $scope.accounts = ss.accounts;
     $scope.account = ss.account;
@@ -532,6 +539,8 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
               window.hideLoader();    
               Storage.setStore(identity, keys);          
               alert("Activation was successful - please keep in mind that it may take a few minutes for your balance to show");
+              Storage.ico = true;
+              Storage.restored = true;
               $location.path("/encrypt");
             });
           }).catch(function(e){
@@ -541,7 +550,8 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
             });
           });
         } else {
-          Storage.setStore(identity, keys);          
+          Storage.setStore(identity, keys);   
+          Storage.restored = true;
           $location.path("/encrypt");
         }
     };

@@ -14,14 +14,14 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     $scope.newMnemonic();
     $scope.create = function(){
         var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
+        keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh};
         var identity = {
-            temp : {sk : keys.sk, pk : keys.pk, pkh : keys.pkh},
             pkh : keys.pkh,
             accounts : [{title: "Main", address : keys.pkh, public_key : keys.pk}],
             account : 0,
             transactions : {},
         };
-        Storage.setStore(identity);
+        Storage.setStore(identity, keys);
         $location.path("/validate");
     };
 }])
@@ -31,13 +31,12 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
       "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet"
     }
     var ss = Storage.loadStore();
-    if (!ss || !ss.ensk || !ss.temp){
+    if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
        $location.path('/new');
     }
-    $scope.setting = Storage.loadSetting();
-
+    if (typeof ss.temp != 'undefined') delete ss.temp;
     
-      
+    $scope.setting = Storage.loadSetting();
     $scope.accounts = ss.accounts;
     $scope.account = ss.account;
     $scope.accountDetails = {};
@@ -83,8 +82,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     }
     $scope.lock = function(){
         clearInterval(ct);
-        delete ss.temp;
-        Storage.setStore(ss);
+        Storage.keys = {};
         $location.path('/unlock');
     }
     $scope.saveTitle = function(){
@@ -131,7 +129,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     };
     $scope.add = function(){
       if (!confirm("Creating a new account incurs an origination fee of ~0.25XTZ - do you want to continue?")) return;
-      var keys = ss.temp;
+      var keys = Storage.keys;
       window.showLoader();      
       window.eztz.rpc.account(keys, 0, true, true, keys.pkh, 0).then(function(r){
         $scope.$apply(function(){
@@ -192,7 +190,6 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
       window.eztz.rpc.getDelegate($scope.accounts[a].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
-          console.log(r);
           var ii = $scope.delegates.keys.indexOf($scope.dd);
           if (ii >= 0){
             $scope.delegateType = $scope.dd;
@@ -244,8 +241,8 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
       if (!confirm("Are you sure you want to send " + $scope.amount + "XTZ to " + $scope.toaddress + "?")) return false;
       window.showLoader();
       var keys = {
-        sk : ss.temp.sk,
-        pk : ss.temp.pk,
+        sk : Storage.keys.sk,
+        pk : Storage.keys.pk,
         pkh : $scope.accounts[$scope.account].address,
       };
       if ($scope.parameters){
@@ -316,8 +313,8 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         }
         window.showLoader();
         var keys = {
-          sk : ss.temp.sk,
-          pk : ss.temp.pk,
+          sk : Storage.keys.sk,
+          pk : Storage.keys.pk,
           pkh : $scope.accounts[$scope.account].address,
         };
         window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, $scope.dd, 0).then(function(r){
@@ -337,15 +334,18 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
 }])
 .controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     $scope.setting = Storage.loadSetting();
-    if (!$scope.setting) $scope.setting = {
-      rpc : "https://rpc.tezrpc.me",
-      disclaimer : false
-    };
+    if (!$scope.setting) {
+      $scope.setting = {
+        rpc : "https://rpc.tezrpc.me",
+        disclaimer : false
+      };
+      Storage.setSetting($scope.setting);
+    }
     window.eztz.node.setProvider($scope.setting.rpc);
     
-    var checkStore = function(){     
+    var checkStore = function(){
       var ss = Storage.loadStore();
-      if (ss && typeof ss.temp != 'undefined' && ss.temp.sk && ss.temp.pk && ss.temp.pkh){
+      if (ss && typeof Storage.keys.sk != 'undefined'){
           $location.path('/main');
       }  else if (ss && ss.ensk){
           $location.path('/unlock');
@@ -369,7 +369,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
 }])
 app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
     var ss = Storage.loadStore();
-    if (ss  && ss.ensk && typeof ss.temp != 'undefined' && ss.temp.sk && ss.temp.pk && ss.temp.pkh){
+    if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
         $location.path('/main');
     }  else if (ss && ss.ensk){
         $location.path('/unlock');
@@ -391,7 +391,7 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
 }])
 .controller('SettingController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     var ss = Storage.loadStore();
-    if (!ss || !ss.ensk || !ss.temp){
+    if (!ss || !ss.ensk ||  typeof Storage.keys.sk == 'undefined'){
        $location.path('/new');
     }
     $scope.setting = Storage.loadSetting();
@@ -404,47 +404,29 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
     }
     $scope.show = function(){
       if (!$scope.password) return alert("Please enter your password");
-      window.showLoader();
-      setTimeout(function(){
-        $scope.$apply(function(){
-          try {
-            var raw = sjcl.decrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, ss.pkh, 30000, 512, 'sha512').toString(), ss.ensk);
-          } catch(err){
-            window.hideLoader();
-            $scope.password = '';
-            alert("Incorrect password");
-            return;
-          }
-          $scope.password = '';
-          $scope.privateKey = raw;
-          window.hideLoader();
-        });
-      }, 100);
-    };
-    
+      if ($scope.password == Storage.password) {
+         $scope.privateKey = Storage.keys.sk;
+      } else { 
+          alert("Incorrect password");
+      }
+    }
 }])
 .controller('UnlockController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     var ss = Storage.loadStore();
     if (!ss || !ss.ensk){
          $location.path('/new');
-    } else if (ss && ss.ensk && ss.temp && ss.temp.sk && ss.temp.pk && ss.temp.pkh){
+    } else if (ss && ss.ensk && typeof Storage.keys.sk != 'undefined'){
          $location.path('/main');
     }
     $scope.clear = function(){
-        if (confirm("Are you sure you want to clear you TezBox - note, unless you've backed up your seed words you'll no longer have access to your accounts")){
+        if (confirm("Are you sure you want to clear you TezBox - note, unless you've backed up your seed words or private key you'll no longer have access to your accounts")){
           Storage.clearStore();
-         $location.path('/new');
+          $location.path('/new');
         }
     }
     $scope.unlock = function(){
-        if (!$scope.password){
-            alert("Please enter your password");
-            return;
-        }
-        if ($scope.password.length < 8){
-            alert("Your password is too short");
-            return;
-        }
+        if (!$scope.password) alert("Please enter your password");
+        if ($scope.password.length < 8) alert("Your password is too short");
         window.showLoader();
         setTimeout(function(){
           $scope.$apply(function(){
@@ -464,15 +446,8 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
                 return;
               }
             }
-            var identity = {
-                temp : c,
-                ensk : ss.ensk,
-                pkh : ss.pkh,
-                accounts : ss.accounts,
-                account : ss.account,
-                transactions : ss.transactions,
-            };
-            Storage.setStore(identity);
+            Storage.keys = c;
+            Storage.password = $scope.password;
             $location.path('/main');
           });
         }, 100);
@@ -480,7 +455,7 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
 }])
 .controller('EncryptController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     var ss = Storage.loadStore();
-    if (ss  && ss.ensk && typeof ss.temp != 'undefined' && ss.temp.sk && ss.temp.pk && ss.temp.pkh){
+    if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
         $location.path('/main');
     }  else if (ss && ss.ensk){
         $location.path('/unlock');
@@ -492,30 +467,22 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
     $scope.password = '';
     $scope.password2 = '';
     $scope.encrypt = function(){
-        if (!$scope.password || !$scope.password2){
-            alert("Please enter your password");
-            return;
-        }
-        if ($scope.password.length < 8){
-            alert("Your password is too short");
-            return;
-        }
-        if ($scope.password != $scope.password2){
-            alert("Passwords do not match");
-            return;
-        }
+        if (!$scope.password || !$scope.password2) return alert("Please enter your password");
+        if ($scope.password.length < 8) return alert("Your password is too short");
+        if ($scope.password != $scope.password2) return alert("Passwords do not match");
+        
         window.showLoader();
         setTimeout(function(){
           $scope.$apply(function(){
             var identity = {
-                temp : ss.temp,
-                ensk : sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, ss.temp.pkh, 30000, 512, 'sha512').toString(), ss.temp.sk),
-                pkh : ss.temp.pkh,
+                ensk : sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, Storage.keys.pkh, 30000, 512, 'sha512').toString(), Storage.keys.sk),
+                pkh : Storage.keys.pkh,
                 accounts : ss.accounts,
-                account : 0,
+                account : ss.account,
                 transactions : ss.transactions,
             };
-            Storage.setStore(identity);          
+            Storage.setStore(identity);
+            Storage.password = $scope.password;            
             $location.path("/main");
           });
         }, 100);
@@ -549,8 +516,9 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
         } else if ($scope.type == 'private'){
           var keys = window.eztz.crypto.extractKeys($scope.private_key);          
         }
+        
+        var keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh};
         var identity = {
-            temp : {sk : keys.sk, pk : keys.pk, pkh : keys.pkh},
             pkh : keys.pkh,
             accounts : [{title: "Main", address : keys.pkh, public_key : keys.pk}],
             account : 0,
@@ -558,10 +526,10 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
         };
         if ($scope.type == 'ico' && $scope.activation_code){
           window.showLoader(); 
-          window.eztz.rpc.activate(identity.temp, $scope.activation_code).then(function(){
+          window.eztz.rpc.activate(keys, $scope.activation_code).then(function(){
             $scope.$apply(function(){
               window.hideLoader();    
-              Storage.setStore(identity);          
+              Storage.setStore(identity, keys);          
               alert("Activation was successful - please keep in mind that it may take a few minutes for your balance to show");
               $location.path("/encrypt");
             });
@@ -572,7 +540,7 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
             });
           });
         } else {
-          Storage.setStore(identity);          
+          Storage.setStore(identity, keys);          
           $location.path("/encrypt");
         }
     };

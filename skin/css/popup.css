@@ -121,6 +121,7 @@ a.btn-link{
   right:0;
   bottom:0;
   overflow: hidden;
+      min-height: 800px;
 }
 #area div.mainBody>.side{
   padding: 20px;
@@ -471,7 +472,6 @@ position: absolute;
     padding: 0 20px;
     bottom: 170px;
     overflow-y: scroll;
-    padding-bottom: 150px;
 }
 .med-title{
       text-align: center;
@@ -487,6 +487,6 @@ position: absolute;
 }
 .mainTabs .tab-pane#transactions{
    overflow-y: scroll;
-    height: 450px; 
+    height: 300px; 
    
 }

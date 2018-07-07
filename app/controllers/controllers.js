@@ -176,11 +176,13 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
       'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
       'tz1LesY3S4wfe15SNm1W3qJmQzWxLqVjTruH',
       'tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ',
+      'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
       ],
       names : [
         'CryptoDelegate',
         'xtez.io',
         'Tezos.Community',
+        'HappyTezos',
       ]
     };
     

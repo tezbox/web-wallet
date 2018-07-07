@@ -105,7 +105,11 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     $scope.kt1 = '';
     $scope.import = function(){
       if (!$scope.kt1) return alert("Please enter the KT1 address to import");
-      window.showLoader();      
+      for(var i = 0; i < $scope.accounts.length; i++){
+        if ($scope.accounts[i].address == $scope.kt1) return alert("That address is already linked to your wallet!");
+      }
+      window.showLoader();
+      $scope.kt1 = '';
       window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
         if (r != $scope.accounts[0].address) return alert("That contract is not managed by your account key");
         $scope.$apply(function(){

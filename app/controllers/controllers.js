@@ -109,7 +109,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         if ($scope.accounts[i].address == $scope.kt1) return alert("That address is already linked to your wallet!");
       }
       window.showLoader();
-      $scope.kt1 = '';
+      
       window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
         if (r != $scope.accounts[0].address) return alert("That contract is not managed by your account key");
         $scope.$apply(function(){
@@ -124,6 +124,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
           ss.account = $scope.account;
           Storage.setStore(ss);
           $scope.refresh();
+          $scope.kt1 = '';
           window.hideLoader();
         })
       }).catch(function(r){

@@ -3,4 +3,4 @@ X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
 Content-Security-Policy: frame-ancestors 'none'
 X-Content-Type-Options: nosniff
-Content-Security-Policy: default-src 'none'; object-src 'none'; img-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; report-uri https://<report-uri-subdomain>.report-uri.io/r/default/csp/enforce;
+Content-Security-Policy: default-src 'none'; connect-src *;object-src 'none'; img-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;

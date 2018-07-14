@@ -445,17 +445,9 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
               var sk = sjcl.decrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, ss.pkh, 30000, 512, 'sha512').toString(), ss.ensk);
               var c = window.eztz.crypto.extractKeys(sk);
             } catch(err){
-              try {
-                var sk = sjcl.decrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, '', 10, 32, 'sha512').toString(), ss.ensk);
-                
-                var c = window.eztz.crypto.extractKeys(sk);
-                ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, c.pkh, 30000, 512, 'sha512').toString(), sk);
-                ss.pkh = c.pkh;
-              } catch(err){
                 window.hideLoader();
                 alert("Incorrect password");
                 return;
-              }
             }
             Storage.keys = c;
             Storage.password = $scope.password;

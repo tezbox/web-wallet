@@ -1,4 +1,39 @@
-app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
+app.controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
+    $scope.setting = Storage.loadSetting();
+    if (!$scope.setting) {
+      $scope.setting = {
+        rpc : "https://rpc.tezrpc.me",
+        disclaimer : false
+      };
+      Storage.setSetting($scope.setting);
+    }
+    window.eztz.node.setProvider($scope.setting.rpc);
+    
+    var checkStore = function(){
+      var ss = Storage.loadStore();
+      if (ss && typeof Storage.keys.sk != 'undefined'){
+          $location.path('/main');
+      }  else if (ss && ss.ensk){
+          $location.path('/unlock');
+      }
+    };
+    if ($scope.setting.disclaimer) {
+      checkStore();
+    }
+    $scope.acceptDisclaimer = function(){
+      $scope.setting.disclaimer = true;
+      Storage.setSetting($scope.setting);
+      checkStore();
+    };
+    $scope.restore = function(){
+        $location.path('/restore');
+    };
+    $scope.create = function(){
+        $location.path('/create');
+    };
+    
+}])
+.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
     $scope.passphrase = '';
     $scope.mnemonic = '';
     $scope.cancel = function(){
@@ -25,10 +60,33 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         $location.path("/validate");
     };
 }])
+.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
+    var ss = Storage.loadStore();
+    if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
+        $location.path('/main');
+    }  else if (ss && ss.ensk){
+        $location.path('/unlock');
+    }
+    $scope.cancel = function(){
+        Storage.clearStore();
+        $location.path('/new');
+    };
+    $scope.passphrase = '';
+    $scope.mnemonic = '';
+    $scope.validate = function(){
+      var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
+      if (keys.pkh != ss.pkh) {
+        alert("Sorry, those details do not match - please try again, or go back and create a new account again");
+      } else {        
+        $location.path("/encrypt");
+      }
+    };
+}])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', function($scope, $location, $http, Storage) {
     window.hideLoader();
     var protos = {
-      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet"
+      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet",
+      "PsYLVpVvgbLhAhoqAkMFUo6gudkJ9weNXhUYCiLDzcUpFpkk8Wt" : "Betanet_v2"
     }
     var ss = Storage.loadStore();
     if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
@@ -83,6 +141,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     }
     refreshHash();
     var ct = setInterval(refreshHash, 20000);
+    
     $scope.viewSettings = function(){
         clearInterval(ct);
         $location.path('/setting');
@@ -172,6 +231,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
         } else alert("There was an error adding account. Please ensure your main account has funds available");
       });
     };
+    
     $scope.delegates = {
       keys : [
       'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
@@ -239,7 +299,7 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     };
     $scope.copy = function(){
       alert("Copied to clipboard");
-        window.copyToClipboard($scope.accounts[$scope.account].address);
+      window.copyToClipboard($scope.accounts[$scope.account].address);
     };
     
     
@@ -343,63 +403,6 @@ app.controller('CreateController', ['$scope', '$location', 'Storage', '$sce', fu
     $scope.refresh();
     
 }])
-.controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
-    $scope.setting = Storage.loadSetting();
-    if (!$scope.setting) {
-      $scope.setting = {
-        rpc : "https://rpc.tezrpc.me",
-        disclaimer : false
-      };
-      Storage.setSetting($scope.setting);
-    }
-    window.eztz.node.setProvider($scope.setting.rpc);
-    
-    var checkStore = function(){
-      var ss = Storage.loadStore();
-      if (ss && typeof Storage.keys.sk != 'undefined'){
-          $location.path('/main');
-      }  else if (ss && ss.ensk){
-          $location.path('/unlock');
-      }
-    };
-    if ($scope.setting.disclaimer) {
-      checkStore();
-    }
-    $scope.acceptDisclaimer = function(){
-      $scope.setting.disclaimer = true;
-      Storage.setSetting($scope.setting);
-      checkStore();
-    };
-    $scope.restore = function(){
-        $location.path('/restore');
-    };
-    $scope.create = function(){
-        $location.path('/create');
-    };
-    
-}])
-app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
-    var ss = Storage.loadStore();
-    if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
-        $location.path('/main');
-    }  else if (ss && ss.ensk){
-        $location.path('/unlock');
-    }
-    $scope.cancel = function(){
-        Storage.clearStore();
-        $location.path('/new');
-    };
-    $scope.passphrase = '';
-    $scope.mnemonic = '';
-    $scope.validate = function(){
-      var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
-      if (keys.pkh != ss.pkh) {
-        alert("Sorry, those details do not match - please try again, or go back and create a new account again");
-      } else {        
-        $location.path("/encrypt");
-      }
-    };
-}])
 .controller('SettingController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     var ss = Storage.loadStore();
     if (!ss || !ss.ensk ||  typeof Storage.keys.sk == 'undefined'){
@@ -436,8 +439,8 @@ app.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 
         }
     }
     $scope.unlock = function(){
-        if (!$scope.password) alert("Please enter your password");
-        if ($scope.password.length < 8) alert("Your password is too short");
+        if (!$scope.password) return alert("Please enter your password");
+        if ($scope.password.length < 8) return alert("Your password is too short");
         window.showLoader();
         setTimeout(function(){
           $scope.$apply(function(){

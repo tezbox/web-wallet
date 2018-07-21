@@ -91,7 +91,7 @@
               <div class='tx' ng-repeat="tx in transactions track by $index">
                     <blocky class="avatar" seed='{{tx.to}}' size='8' scale='16'></blocky>
                     <h3 class="date">{{tx.date}} - {{tx.to}}</h3>
-                    <span class="opHash"><a target="_blank" href="{{'http://tzscan.io/' + tx.hash}}" ng-click="openTransaction(tx.hash)">{{tx.hash.slice(0,15)}}..<i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
+                    <span class="opHash"><a target="_blank" href="{{'http://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}..<i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
                     <span class="amt">{{tx.amount}}ꜩ</span>
               </div>
           </div>

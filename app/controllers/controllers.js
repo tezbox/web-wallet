@@ -85,7 +85,8 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', function($scope, $location, $http, Storage) {
     window.hideLoader();
     var protos = {
-      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet"
+      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet",
+      "PsYLVpVvgbLhAhoqAkMFUo6gudkJ9weNXhUYCiLDzcUpFpkk8Wt" : "Betanet_v2"
     }
     var ss = Storage.loadStore();
     if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){

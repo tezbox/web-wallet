@@ -3,6 +3,7 @@ var app = angular.module('popup', [
   'ngRoute',
   'angular-blockies',
   'monospaced.qrcode',
+  'oitozero.ngSweetAlert'
 ])
 
 app.config(function($routeProvider) {

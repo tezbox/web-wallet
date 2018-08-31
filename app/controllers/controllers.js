@@ -562,6 +562,17 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         if ($scope.password.length < 8) return SweetAlert.swal("Uh-oh!", "Your password is too short");
         if ($scope.password != $scope.password2) return SweetAlert.swal("Uh-oh!", "Passwords do not match");
         
+        //Validate
+        var spaces = $scope.password.match(/\s+/g),
+        numbers = $scope.password.match(/\d+/g),
+        uppers  = $scope.password.match(/[A-Z]/),
+        lowers  = $scope.password.match(/[a-z]/),
+        special = $scope.password.match(/[!@#$%\^&*\+]/);
+      
+        if (spaces !== null) return SweetAlert.swal("Uh-oh!", "Your password can't include any spaces");
+        if (uppers === null || lowers === null) return SweetAlert.swal("Uh-oh!", "Please include at least one uppercase and lowercase letter in your password");
+        if (special === null && numbers === null) return SweetAlert.swal("Uh-oh!", "Please include at least one special character (number or symbol) in your password");
+        
         window.showLoader();
         setTimeout(function(){
           $scope.$apply(function(){

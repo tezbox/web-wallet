@@ -54,7 +54,7 @@
               </button>
               {{accounts[account].address}}
             </h5>
-            <strong><a target="_blank" href="http://tzscan.io/{{accounts[account].address}}">View on tzscan <i class="fas fa-external-link-alt"></i></a></strong>
+            <strong><a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View on tzscan <i class="fas fa-external-link-alt"></i></a></strong>
             <h5 class="balance">
               {{accountDetails.balance}} 
               <button ng-click="refresh()" class="icon-button" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -91,7 +91,7 @@
               <div class='tx' ng-repeat="tx in transactions track by $index">
                     <blocky class="avatar" seed='{{tx.to}}' size='8' scale='16'></blocky>
                     <h3 class="date">{{tx.date}} - {{tx.to}}</h3>
-                    <span class="opHash"><a target="_blank" href="{{'http://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}..<i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
+                    <span class="opHash"><a target="_blank" href="{{'https://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}..<i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
                     <span class="amt">{{tx.amount}}ꜩ</span>
               </div>
           </div>
@@ -195,7 +195,7 @@
             <div class="row">
               <div class="col-md-12">
                 <h3>Import KT1 account</h3>
-                <p>You can use this to import KT1 addresses that have been originated else where (or after you have restored your account). You can view all of your originated KT1 addresses on <a target="_blank" href="http://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
+                <p>You can use this to import KT1 addresses that have been originated else where (or after you have restored your account). You can view all of your originated KT1 addresses on <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
               </div>
             </div>
               

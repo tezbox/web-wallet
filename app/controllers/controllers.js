@@ -298,12 +298,14 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       'tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ',
       'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
       'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
+      'tz1LBEKXaxQbd5Gtzbc1ATCwc3pppu81aWGc',
       ],
       names : [
         'Tezzigator',
         'Tezos.Community',
         'HappyTezos',
         'CryptoDelegate',
+        'Tez-Baking.com',
       ]
     };
     

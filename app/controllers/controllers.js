@@ -479,7 +479,11 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
               return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
                 r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
                 return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
-              });
+              }).catch(function(e){
+				  if (cancelled) return;
+				  window.hideLoader();
+				  SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
+				});
             }).catch(function(e){
               if (cancelled) return;
               window.hideLoader();

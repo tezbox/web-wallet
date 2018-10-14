@@ -606,7 +606,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       
       SweetAlert.swal({
         title: "Are you sure?",
-        text: "You are about to clear you TezBox - note, unless you've backed up your seed words or private key you'll no longer have access to your accounts",
+        text: "You are about to clear your TezBox. Note: unless you've backed up your seed words or private key you'll no longer have access to your accounts.",
         type : "warning",
         showCancelButton: true,
         confirmButtonText: "Yes, clear it!",

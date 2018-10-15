@@ -7222,7 +7222,7 @@ var tezledger = {
 					switch (_context.prev = _context.next) {
 						case 0:
 							_context.next = 2;
-							return Transport.create();
+							return Transport.create(60 * 1000);
 
 						case 2:
 							transport = _context.sent;
@@ -7254,7 +7254,7 @@ var tezledger = {
 					switch (_context2.prev = _context2.next) {
 						case 0:
 							_context2.next = 2;
-							return Transport.create();
+							return Transport.create(60 * 1000);
 
 						case 2:
 							transport = _context2.sent;

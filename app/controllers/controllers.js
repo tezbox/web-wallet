@@ -366,7 +366,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     
     
     $scope.send = function(){
-      if (!$scope.amount || !$scope.toaddress) return SweetAlert.swal("Uh-oh!", "Please enter amount and a destination");
+      if (!$scope.toaddress) return SweetAlert.swal("Uh-oh!", "Please enter a destination");
       if ($scope.amount < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
       if ($scope.fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
       if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
@@ -388,7 +388,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
             pkh : $scope.accounts[$scope.account].address,
           };
           if ($scope.parameters){
-            var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, $scope.fee);
+            var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, $scope.fee, $scope.gas_limit, $scope.storage_limit);
           } else {
             var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, $scope.fee);
           }

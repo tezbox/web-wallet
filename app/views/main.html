@@ -33,12 +33,6 @@
       </div>
       <div class="mainArea">
       <div class="innerContainer">
-    
-    <div class="row">
-      <div class="col-md-12">
-      <p class="alert alert-warning"><i class="leftIcon fas fa-exclamation-circle"></i><strong>This wallet is connected to the betanet, where you are dealing with live transactions. You can read more about the <a href="https://tezosfoundation.ch/news/tezos-betanet-expectations/" target="_blank">Betanet expectations here</a>.</strong></p>
-    </div>
-    </div>
     <div class="row addressDetails">
         <div class="col-md-3 blocky-container">
           <blocky class="avatar" seed='{{accounts[account].address}}' size='8' scale='16'></blocky>
@@ -54,7 +48,7 @@
               </button>
               {{accounts[account].address}}
             </h5>
-            <strong><a target="_blank" href="http://tzscan.io/{{accounts[account].address}}">View on tzscan <i class="fas fa-external-link-alt"></i></a></strong>
+            <strong><a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View on tzscan <i class="fas fa-external-link-alt"></i></a></strong>
             <h5 class="balance">
               {{accountDetails.balance}} 
               <button ng-click="refresh()" class="icon-button" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -89,12 +83,27 @@
             
             <div class="transactions" ng-hide="transactions.length == 0">
               <div class='tx' ng-repeat="tx in transactions track by $index">
-                    <blocky class="avatar" seed='{{tx.to}}' size='8' scale='16'></blocky>
-                    <h3 class="date">{{tx.date}} - {{tx.to}}</h3>
-                    <span class="opHash"><a target="_blank" href="{{'http://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}..<i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
-                    <span class="amt">{{tx.amount}}ꜩ</span>
+                <div class="row">
+                  <div class="col-md-3">
+                    <blocky ng-show="tx.source != accounts[account].address" class="avatar" seed='{{tx.source}}' size='8' scale='16'></blocky>
+                    <blocky ng-show="tx.source == accounts[account].address" class="avatar" seed='{{tx.destination}}' size='8' scale='16'></blocky>
+                    <span ng-show="tx.source != accounts[account].address" class="dir green"><strong>RECEIVED</strong><br />{{toDate(tx.time)}}</span>
+                    <span ng-show="tx.source == accounts[account].address" class="dir red"><strong>SENT</strong><br />{{toDate(tx.time)}}</span>
+                  </div>
+                  <div class="col-md-5">
+                      <span class="date" ng-show="tx.source != accounts[account].address" >from {{tx.source.slice(0,25)}}...</span>
+                      <span class="date" ng-show="tx.source == accounts[account].address" >to {{tx.destination.slice(0,25)}}...</span>
+                  </div>
+                  <div class="col-md-3">
+                      <span class="opHash"><a target="_blank" href="{{'https://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}... <i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
+                  </div>
+                  <div class="col-md-1">
+                      <span ng-show="tx.source == accounts[account].address" class="amt red">{{toTez(tx.amount)}}ꜩ</span>
+                      <span ng-show="tx.source != accounts[account].address" class="amt green">{{toTez(tx.amount)}}ꜩ</span>
+                  </div>
+                </div>
               </div>
-          </div>
+            </div>
                     
           </div>
           <div role="tabpanel" class="tab-pane" id="send">
@@ -155,9 +164,10 @@
               <div class="col-md-4">
                   <div class="form-group">
                     <select class="form-control" ng-model="delegateType">
+                      <option value="false">Undelegated</option>
                       <option value="">Custom</option>
                       <option value="tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5">CryptoDelegate</option>
-                      <option value="tz1LesY3S4wfe15SNm1W3qJmQzWxLqVjTruH">xtez.io</option>
+                      <option value="tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY">Tezzigator</option>
                       <option value="tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ">Tezos.Community</option>
                       <option value="tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q">HappyTezos</option>
                       <option value="tz1LBEKXaxQbd5Gtzbc1ATCwc3pppu81aWGc">Tez-Baking.com</option>
@@ -196,7 +206,7 @@
             <div class="row">
               <div class="col-md-12">
                 <h3>Import KT1 account</h3>
-                <p>You can use this to import KT1 addresses that have been originated else where (or after you have restored your account). You can view all of your originated KT1 addresses on <a target="_blank" href="http://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
+                <p>You can use this to import KT1 addresses that have been originated else where (or after you have restored your account). You can view all of your originated KT1 addresses on <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
               </div>
             </div>
               
@@ -229,12 +239,6 @@
           </div>
         </div>
 
-      </div>
-      <div class="donate text-center">
-      <h5 class="address">
-        Enjoy the wallet? Feel free to donate: <strong>tz1cLDXASgh48ntYmLqM3cqPEXmUtpJVVPma</strong>
-        </button>
-      </h5>
       </div>
     </div>
     </div>

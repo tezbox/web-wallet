@@ -20,6 +20,10 @@ app.config(function($routeProvider) {
         templateUrl : "app/views/restore.html",
         controller : "RestoreController",
     })
+    .when("/link", {
+        templateUrl : "app/views/link.html",
+        controller : "LinkController",
+    })
     .when("/validate", {
         templateUrl : "app/views/validate.html",
         controller : "ValidateController",

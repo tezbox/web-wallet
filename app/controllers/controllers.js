@@ -2,7 +2,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     $scope.setting = Storage.loadSetting();
     if (!$scope.setting) {
       $scope.setting = {
-        rpc : "https://rpc.tezrpc.me",
+        rpc : "https://alphanet.tezrpc.me",
         disclaimer : false
       };
       Storage.setSetting($scope.setting);

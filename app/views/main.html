@@ -87,8 +87,8 @@
                   <div class="col-md-3">
                     <blocky ng-show="tx.source != accounts[account].address" class="avatar" seed='{{tx.source}}' size='8' scale='16'></blocky>
                     <blocky ng-show="tx.source == accounts[account].address" class="avatar" seed='{{tx.destination}}' size='8' scale='16'></blocky>
-                    <span ng-show="tx.source != accounts[account].address" class="dir green"><strong>RECEIVED</strong><br />{{toDate(tx.time)}}</span>
-                    <span ng-show="tx.source == accounts[account].address" class="dir red"><strong>SENT</strong><br />{{toDate(tx.time)}}</span>
+                    <span ng-show="tx.source != accounts[account].address" class="dir green"><strong>RECEIVED</strong></span>
+                    <span ng-show="tx.source == accounts[account].address" class="dir red"><strong>SENT</strong></span>
                   </div>
                   <div class="col-md-5">
                       <span class="date" ng-show="tx.source != accounts[account].address" >from {{tx.source.slice(0,25)}}...</span>

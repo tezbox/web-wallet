@@ -102,12 +102,12 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     $scope.account = ss.account;
     if (Storage.restored){
       window.showLoader();
-      $http.get("https://betaapi.tezex.info/v2/tzx/account/"+$scope.accounts[0].address+"/originations").then(function(r){
+      $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
         if (r.status == 200){
-          if (r.data.originations.length > 0){
+          if (r.data.length > 0){
             SweetAlert.swal({
               title: "Import KT addresses",
-              text: "We have found "+r.data.originations.length+" KT1 address(es) linked to your public key - would you like to import them now? (You can also manually import these by going to Options > Import)",
+              text: "We have found "+r.data.length+" KT1 address(es) linked to your public key - would you like to import them now? (You can also manually import these by going to Options > Import)",
               type : "info",
               showCancelButton: true,
               confirmButtonText: "Yes, import them!",
@@ -115,13 +115,15 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
             },
             function(isConfirm){
               if (isConfirm){
-                for(var i = 0; i < r.data.originations.length; i++){
-                  $scope.accounts.push(
-                    {
-                      title : "Account " + ($scope.accounts.length),
-                      address : JSON.parse(r.data.originations[i].new_account)[0]
-                    }
-                  );
+                for(var i = 0; i < r.data.length; i++){
+                  for(var j = 0; j < r.data[i].type.operations.length; j++){
+                    $scope.accounts.push(
+                      {
+                        title : "Account " + ($scope.accounts.length),
+                        address : r.data[i].type.operations[j].tz1.tz
+                      }
+                    );
+                  }
                 }
                 ss.accounts = $scope.accounts;
                 Storage.setStore(ss);
@@ -170,9 +172,21 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       return window.eztz.utility.totez(parseInt(m));
     }
     refreshTransactions = function(){
-      $http.get("https://betaapi.tezex.info/v2/tzx/account/"+$scope.accounts[$scope.account].address+"/transactions").then(function(r){
-        if (r.status == 200 && r.data.transactions.length > 0){
-            $scope.transactions = r.data.transactions;
+      $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction").then(function(r){
+        if (r.status == 200 && r.data.length > 0){
+          var txs = [];
+          for(var i = 0; i < r.data.length; i++){
+            for(var j = 0; j < r.data[i].type.operations.length; j++){
+              if (r.data[i].type.operations[j].kind != 'transaction' || r.data[i].type.operations[j].failed) continue;
+              txs.push({
+                "amount" : r.data[i].type.operations[j].amount,
+                "destination" : r.data[i].type.operations[j].destination.tz,
+                "hash" : r.data[i].hash,
+                "source" : r.data[i].type.operations[j].src.tz,
+              });
+            }
+          }
+          $scope.transactions = txs;
         }
       });
     };

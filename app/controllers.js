@@ -1,5 +1,7 @@
-app.controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
+app
+.controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
     $scope.setting = Storage.loadSetting();
+    
     if (!$scope.setting) {
       $scope.setting = {
         rpc : "https://rpc.tezrpc.me",
@@ -9,7 +11,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     }
     window.eztz.node.setProvider($scope.setting.rpc);
     
-    var checkStore = function(){
+    var routeUser = function(){
       var ss = Storage.loadStore();
       if (ss && typeof Storage.keys.sk != 'undefined'){
           $location.path('/main');
@@ -18,13 +20,14 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       }
     };
     if ($scope.setting.disclaimer) {
-      checkStore();
+      routeUser();
     }
     $scope.acceptDisclaimer = function(){
       $scope.setting.disclaimer = true;
       Storage.setSetting($scope.setting);
-      checkStore();
+      routeUser();
     };
+    
     $scope.restore = function(){
         $location.path('/restore');
     };
@@ -34,11 +37,11 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     $scope.create = function(){
         $location.path('/create');
     };
-    
 }])
 .controller('CreateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
     $scope.passphrase = '';
     $scope.mnemonic = '';
+    
     $scope.cancel = function(){
         $location.path('/new');
     };
@@ -73,6 +76,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         Storage.clearStore();
         $location.path('/new');
     };
+    
     $scope.passphrase = '';
     $scope.mnemonic = '';
     $scope.validate = function(){
@@ -85,10 +89,6 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     };
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', function($scope, $location, $http, Storage, SweetAlert) {
-    var protos = {
-      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet",
-      "PsYLVpVvgbLhAhoqAkMFUo6gudkJ9weNXhUYCiLDzcUpFpkk8Wt" : "Mainnet"
-    }
     var ss = Storage.loadStore();
     if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
        $location.path('/new');
@@ -96,62 +96,23 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     if (typeof ss.temp != 'undefined') delete ss.temp;
     $scope.type = "encrypted";
     if (typeof Storage.keys.link != 'undefined' && Storage.keys.link) $scope.type = "ledger";
-    
+    var protos = {
+      "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet_v1",
+      "ProtoALphaALphaALphaALphaALphaALphaALphaALphaDdp3zK" : "Zeronet",
+      "PsYLVpVvgbLhAhoqAkMFUo6gudkJ9weNXhUYCiLDzcUpFpkk8Wt" : "Mainnet"
+    }
     $scope.setting = Storage.loadSetting();
     $scope.accounts = ss.accounts;
     $scope.account = ss.account;
-    if (Storage.restored){
-      window.showLoader();
-      $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
-        if (r.status == 200){
-          if (r.data.length > 0){
-            SweetAlert.swal({
-              title: "Import KT addresses",
-              text: "We have found "+r.data.length+" KT1 address(es) linked to your public key - would you like to import them now? (You can also manually import these by going to Options > Import)",
-              type : "info",
-              showCancelButton: true,
-              confirmButtonText: "Yes, import them!",
-              closeOnConfirm: true
-            },
-            function(isConfirm){
-              if (isConfirm){
-                for(var i = 0; i < r.data.length; i++){
-                  for(var j = 0; j < r.data[i].type.operations.length; j++){
-                    $scope.accounts.push(
-                      {
-                        title : "Account " + ($scope.accounts.length),
-                        address : r.data[i].type.operations[j].tz1.tz
-                      }
-                    );
-                  }
-                }
-                ss.accounts = $scope.accounts;
-                Storage.setStore(ss);
-                $scope.refresh();
-              }
-              window.hideLoader();
-            });
-          } else {            
-            window.hideLoader();
-          }
-        } else {
-          window.hideLoader();
-        }
-      });
-      if (Storage.ico) SweetAlert.swal("Awesome", "You have successfully restored your ICO wallet. If you have just activated your account, please note that this may take some time to show.");
-      Storage.restored = false;
-      Storage.ico = false;
-    } else {
-      window.hideLoader();
-    }
-    $scope.accountDetails = {};
-    $scope.transactions = [];
     $scope.accountLive = true;
-    
+    $scope.accountDetails = {};
     $scope.tt = $scope.accounts[$scope.account].title;
-    
+    $scope.transactions = [];
     $scope.amount = 0;
     $scope.fee = 0;
+    $scope.advancedOptions = false;
+    $scope.gas_limit = 200;
+    $scope.storage_limit = 0;
     $scope.parameters = '';
     $scope.delegateType = '';
     $scope.dd = '';
@@ -160,16 +121,35 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       level : "N/A",
       proto : "Loading",
     };
-    $scope.transactions = [];
-    $scope.toDate = function(d){
-      var myDate = new Date(d), date = myDate.getDate(), month = myDate.getMonth(), year = myDate.getFullYear(), hours = myDate.getHours(), minutes = myDate.getMinutes();
-      function pad(n) {
-        return n<10 ? '0'+n : n
-      }
-      return pad(date) + "-" + pad(month + 1) + "-" + year + " " + pad(hours) + ":" + pad(minutes);
-    }
-    $scope.toTez = function(m){
-      return window.eztz.utility.totez(parseInt(m));
+    $scope.kt1 = '';
+    $scope.delegates = {
+      keys : [
+      'false',
+      'tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY',
+      'tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ',
+      'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
+      'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
+      ],
+      names : [
+        'Undelegated',
+        'Tezzigator',
+        'Tezos.Community',
+        'HappyTezos',
+        'CryptoDelegate',
+      ]
+    };
+    
+    
+    setBalance = function(r){
+      console.log(r);
+      var rb = parseInt(r);
+      var bal = $scope.toTez(rb); 
+      $scope.accountDetails.raw_balance = rb;
+      $scope.accountDetails.balance = window.eztz.utility.formatMoney(bal, 2, '.', ',')+"ꜩ";
+      
+      //TODO: integrate with currencies
+      var usdbal = bal * 1.37;
+      $scope.accountDetails.usd = "$"+window.eztz.utility.formatMoney(usdbal, 2, '.', ',')+"USD";
     }
     refreshTransactions = function(){
       $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction").then(function(r){
@@ -197,7 +177,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
           $scope.block = {
             net : r.chain_id,
             level : r.header.level,
-            proto : "Connected to " + protos[r.protocol],
+            proto : "Connected to " + (typeof protos[r.protocol] != 'undefined' ? protos[r.protocol] : r.protocol.substring(0,7) + "..."),
           };
         });
       }).catch(function(e){
@@ -210,14 +190,20 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         });
       });
     }
-    refreshHash();
-    refreshTransactions();
     refreshAll = function(){
       refreshHash();
       refreshTransactions();
     }
-    var ct = setInterval(refreshAll, 20000);
-    
+    $scope.toDate = function(d){
+      var myDate = new Date(d), date = myDate.getDate(), month = myDate.getMonth(), year = myDate.getFullYear(), hours = myDate.getHours(), minutes = myDate.getMinutes();
+      function pad(n) {
+        return n<10 ? '0'+n : n
+      }
+      return pad(date) + "-" + pad(month + 1) + "-" + year + " " + pad(hours) + ":" + pad(minutes);
+    }
+    $scope.toTez = function(m){
+      return window.eztz.utility.totez(parseInt(m));
+    }
     $scope.viewSettings = function(){
         clearInterval(ct);
         $location.path('/setting');
@@ -226,7 +212,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         clearInterval(ct);
         Storage.keys = {};
         $location.path('/unlock');
-    }
+    } 
     $scope.saveTitle = function(){
       if (!$scope.tt){
           SweetAlert.swal("Uh-oh!", "Please enter a new title");
@@ -236,8 +222,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       ss.accounts = $scope.accounts;
       Storage.setStore(ss);
       $scope.refresh();
-    };
-    $scope.kt1 = '';
+    };   
     $scope.import = function(){
       if (!$scope.kt1) return SweetAlert.swal("Uh-oh!", "Please enter the KT1 address to import");
       for(var i = 0; i < $scope.accounts.length; i++){
@@ -266,8 +251,9 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         window.hideLoader();
         SweetAlert.swal("Uh-oh!", "There was an error importing that account");
       });
-    };
+    };   
     $scope.remove = function(){
+      if ($scope.account === 0) return;
       SweetAlert.swal({
         title: "Are you sure?",
         text: "You are about to remove this account from your wallet! (You can always restore this account in future by going to Options > Import)",
@@ -298,7 +284,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
       },
       function(isConfirm){
         if (isConfirm){
-          window.showLoader();      
+          window.showLoader();
           if ($scope.type == "encrypted"){
             var keys = {
               sk : Storage.keys.sk,
@@ -313,28 +299,38 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
             };
           }
           var op = window.eztz.rpc.account(keys, 0, true, true, null, 0)
-          
-          if ($scope.type == "ledger"){
-            var cancelled = false;
-            op = op.then(function(r){
-              SweetAlert.swal({
-                title: "Ledger",
-                text: "Please confirm the transaction on your Ledger Nano S Device",
-                type : "warning",
-                showCancelButton: true,
-                showConfirmButton: false,
-              }, function(c){
-                if (!c) cancelled = true;
-              });
-              return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
-                r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
-                return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
-              });
-            }).catch(function(e){
-              if (cancelled) return;
-              window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
-            });
+          if (!keys.sk){
+            switch($scope.type){
+              case "ledger":
+                var cancelled = false;
+                op = op.then(function(r){
+                  SweetAlert.swal({
+                    title: "Ledger",
+                    text: "Please confirm the transaction on your Ledger Nano S Device",
+                    type : "warning",
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                  }, function(c){
+                    if (!c) cancelled = true;
+                  });
+                  return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
+                    r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
+                    return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
+                  });
+                }).catch(function(e){
+                  if (cancelled) return;
+                  window.hideLoader();
+                  SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
+                });
+              break;
+              case "trezor":
+              case "offline":
+              default:
+                window.hideLoader();
+                SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+                return;
+              break;
+            }
           }
           op.then(function(r){
             $scope.$apply(function(){
@@ -360,33 +356,13 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
           }).catch(function(r){
             window.hideLoader();
             if (typeof r.errors !== 'undefined'){
-                
               ee = r.errors[0].id.split(".").pop();
               SweetAlert.swal("Uh-oh!", r.error + ": Error (" + ee + ")");
             } else SweetAlert.swal("Uh-oh!", "There was an error adding account. Please ensure your main account has funds available");
           });
         }
       });
-      
     };
-    
-    $scope.delegates = {
-      keys : [
-      'false',
-      'tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY',
-      'tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ',
-      'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
-      'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
-      ],
-      names : [
-        'Undelegated',
-        'Tezzigator',
-        'Tezos.Community',
-        'HappyTezos',
-        'CryptoDelegate',
-      ]
-    };
-    
     $scope.loadAccount = function(a){
       $scope.account = a;
       $scope.transactions = [];
@@ -398,7 +374,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
           usd : "Loading...",
           raw_balance : "Loading...",
       };
-      if (a){
+      if (a !== 0){
         window.eztz.rpc.getDelegate($scope.accounts[a].address).then(function(r){
           $scope.$apply(function(){
             $scope.dd = r;
@@ -407,43 +383,31 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
               $scope.delegateType = $scope.dd;
             } else 
               $scope.delegateType = '';
-            
           });
         });
       }
       refreshTransactions();
       window.eztz.rpc.getBalance($scope.accounts[a].address).then(function(r){
+        console.log(r);
         $scope.$apply(function(){
           $scope.accountLive = true;
-          var rb = parseInt(r);
-          bal = Math.floor(rb/10000)/100; 
-          var usdbal = bal * 1.78;
-          $scope.accountDetails.raw_balance = rb;
-          $scope.accountDetails.balance = window.eztz.utility.formatMoney(bal, 2, '.', ',')+"ꜩ";
-          $scope.accountDetails.usd = "$"+window.eztz.utility.formatMoney(usdbal, 2, '.', ',')+"USD";
+          setBalance(r);
         });
       }).catch(function(e){
+        console.log(e);
         $scope.$apply(function(){
           $scope.accountLive = false;
-          var rb = parseInt(0);
-          bal = Math.floor(rb/10000)/100; 
-          var usdbal = bal * 1.78;
-          $scope.accountDetails.raw_balance = rb;
-          $scope.accountDetails.balance = window.eztz.utility.formatMoney(bal, 2, '.', ',')+"ꜩ";
-          $scope.accountDetails.usd = "$"+window.eztz.utility.formatMoney(usdbal, 2, '.', ',')+"USD";
+          setBalance(0);
         });
       });
     }
     $scope.refresh = function(){
         $scope.loadAccount($scope.account);
-        
     };
     $scope.copy = function(){
       SweetAlert.swal("Awesome!", "The address has been copied to your clipboard", "success");
       window.copyToClipboard($scope.accounts[$scope.account].address);
     };
-    
-    
     $scope.send = function(){
       if (!$scope.amount || !$scope.toaddress) return SweetAlert.swal("Uh-oh!", "Please enter amount and a destination");
       if ($scope.amount < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
@@ -475,35 +439,46 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
             };
           }
           if ($scope.parameters){
-            var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, $scope.fee);
+            var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, $scope.fee, $scope.gas_limit, $scope.storage_limit);
           } else {
-            var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, $scope.fee);
+            var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, $scope.fee, false, $scope.gas_limit, $scope.storage_limit);
           }
-          if ($scope.type == "ledger"){
-            var cancelled = false;
-            op = op.then(function(r){
-              SweetAlert.swal({
-                title: "Ledger",
-                text: "Please confirm this transaction on your Ledger Nano S Device",
-                type : "warning",
-                showCancelButton: true,
-                showConfirmButton: false,
-              }, function(c){
-                if (!c) cancelled = true;
-              });
-              return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
-                r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
-                return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
-              }).catch(function(e){
-				  if (cancelled) return;
-				  window.hideLoader();
-				  SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
-				});
-            }).catch(function(e){
-              if (cancelled) return;
-              window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
-            });
+          if (!keys.sk){
+            switch($scope.type){
+              case "ledger":
+                var cancelled = false;
+                op = op.then(function(r){
+                  SweetAlert.swal({
+                    title: "Ledger",
+                    text: "Please confirm this transaction on your Ledger Nano S Device",
+                    type : "warning",
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                  }, function(c){
+                    if (!c) cancelled = true;
+                  });
+                  return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
+                    r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
+                    return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
+                  }).catch(function(e){
+                  if (cancelled) return;
+                    window.hideLoader();
+                    SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
+                  });
+                }).catch(function(e){
+                  if (cancelled) return;
+                  window.hideLoader();
+                  SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
+                });
+              break;
+              case "trezor":
+              case "offline":
+              default:
+                window.hideLoader();
+                SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+                return;
+              break;
+            }
           }
           op.then(function(r){
             $scope.$apply(function(){
@@ -523,11 +498,10 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
               }
             });
           });
-          
         }
       });
     };
-     $scope.clear = function(){
+    $scope.clear = function(){
       $scope.amount = 0;
       $scope.fee = 0;
       $scope.toaddress = '';
@@ -554,29 +528,39 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
           };
         }
         var op = window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, $scope.dd, 0)
-        if ($scope.type == "ledger"){
-            var cancelled = false;
-            op = op.then(function(r){
-              SweetAlert.swal({
-                title: "Ledger",
-                text: "Please confirm the transaction on your Ledger Nano S Device",
-                type : "warning",
-                showCancelButton: true,
-                showConfirmButton: false,
-              }, function(c){
-                if (!c) cancelled = true;
+        if (!keys.sk){
+          switch($scope.type){
+            case "ledger":
+              var cancelled = false;
+              op = op.then(function(r){
+                SweetAlert.swal({
+                  title: "Ledger",
+                  text: "Please confirm the transaction on your Ledger Nano S Device",
+                  type : "warning",
+                  showCancelButton: true,
+                  showConfirmButton: false,
+                }, function(c){
+                  if (!c) cancelled = true;
+                });
+                return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
+                  r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
+                  return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
+                });
+              }).catch(function(e){
+                if (cancelled) return;
+                window.hideLoader();
+                SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
               });
-              return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
-                r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
-                return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
-              });
-            }).catch(function(e){
-              if (cancelled) return;
+            break;
+            case "trezor":
+            case "offline":
+            default:
               window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
-            });
+              SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+              return;
+            break;
           }
-        
+        }
         op.then(function(r){
           $scope.$apply(function(){
             SweetAlert.swal("Awesome!", "Delegation operation was successful - this may take a few minutes to update", "success");
@@ -589,8 +573,49 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
           });
         });
     }
-    $scope.refresh();
     
+    if (Storage.restored){
+      window.showLoader();
+      $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
+        window.hideLoader();
+        if (r.status == 200 && r.data.length > 0){
+          SweetAlert.swal({
+            title: "Import KT addresses",
+            text: "We have found "+r.data.length+" KT1 address(es) linked to your public key - would you like to import them now? (You can also manually import these by going to Options > Import)",
+            type : "info",
+            showCancelButton: true,
+            confirmButtonText: "Yes, import them!",
+            closeOnConfirm: true
+          },
+          function(isConfirm){
+            if (isConfirm){
+              for(var i = 0; i < r.data.length; i++){
+                for(var j = 0; j < r.data[i].type.operations.length; j++){
+                  $scope.accounts.push(
+                    {
+                      title : "Account " + ($scope.accounts.length),
+                      address : r.data[i].type.operations[j].tz1.tz
+                    }
+                  );
+                }
+              }
+              ss.accounts = $scope.accounts;
+              Storage.setStore(ss);
+              $scope.refresh();
+            }
+          });
+        }
+      });
+      
+      if (Storage.ico) SweetAlert.swal("Awesome", "You have successfully restored your ICO wallet. If you have just activated your account, please note that this may take some time to show.");
+      Storage.restored = false;
+      Storage.ico = false;
+    } else {
+      window.hideLoader();
+    }
+    $scope.refresh();
+    refreshAll();
+    var ct = setInterval(refreshAll, 20000);
 }])
 .controller('SettingController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
     var ss = Storage.loadStore();
@@ -685,8 +710,6 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
         if (!$scope.password || !$scope.password2) return SweetAlert.swal("Uh-oh!", "Please enter your password");
         if ($scope.password.length < 8) return SweetAlert.swal("Uh-oh!", "Your password is too short");
         if ($scope.password != $scope.password2) return SweetAlert.swal("Uh-oh!", "Passwords do not match");
-        
-        //Validate
         var spaces = $scope.password.match(/\s+/g),
         numbers = $scope.password.match(/\d+/g),
         uppers  = $scope.password.match(/[A-Z]/),
@@ -714,7 +737,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     }
 }])
 .controller('LinkController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
-    $scope.type = 'ledger'; //seed/private_key/ico
+    $scope.type = 'ledger'; //ledger/trezor/offline
 
     $scope.address = '';
     $scope.data = "44'/1729'/0'/0'";
@@ -777,7 +800,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
     };
 }])
 .controller('RestoreController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
-    $scope.type = 'seed'; //seed/private_key/ico
+    $scope.type = 'seed';
 
     $scope.seed = '';
     $scope.passphrase = '';

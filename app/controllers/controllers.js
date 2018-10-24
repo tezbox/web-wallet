@@ -183,6 +183,7 @@ app.controller('NewController', ['$scope', '$location', 'Storage', function($sco
                 "destination" : r.data[i].type.operations[j].destination.tz,
                 "hash" : r.data[i].hash,
                 "source" : r.data[i].type.operations[j].src.tz,
+                "time" : r.data[i].type.operations[j].timestamp,
               });
             }
           }

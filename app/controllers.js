@@ -153,7 +153,7 @@ app
     $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction").then(function(r){
       if (r.status == 200 && r.data.length > 0){
         var txs = [];
-        for(var i = 0; i < r.data.length; i++){
+        for(var i = r.data.length-1; i >= 0; i--){
           for(var j = 0; j < r.data[i].type.operations.length; j++){
             if (r.data[i].type.operations[j].kind != 'transaction' || r.data[i].type.operations[j].failed) continue;
             txs.push({

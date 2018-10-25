@@ -281,6 +281,7 @@ h1{
 
 .tab-content{
   padding-top:20px;
+  padding-bottom: 50px;
 }
 
 
@@ -504,4 +505,18 @@ position: absolute;
 .mainTabs .tab-pane#transactions{
    overflow-y: scroll;
    
+}
+
+.mainContainer>.col-md-12, 
+.mainContainer .mainTabs,
+.mainContainer .mainTabs .tab-pane {
+  height:100%;
+}
+.mainContainer {
+    position: absolute;
+    left: 15px;
+    max-width: 1000px;
+    right: 0;
+    bottom: 50px;
+    top: 202px;
 }

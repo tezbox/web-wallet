@@ -120,6 +120,7 @@ app
   $scope.showCustom = false;
   $scope.showAccounts = false;
   $scope.dd = '';
+  $scope.moreTxs = false;
   $scope.block = {
     net : "Loading..",
     level : "N/A",
@@ -153,9 +154,16 @@ app
     var usdbal = bal * 1.37;
     $scope.accountDetails.usd = "$"+window.eztz.utility.formatMoney(usdbal, 2, '.', ',')+"USD";
   }
+  var maxTxs = 20;
   refreshTransactions = function(){
-    $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction").then(function(r){
+    $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
       if (r.status == 200 && r.data.length > 0){
+        if (r.data.length > maxTxs) {
+          r.data.splice(0,1);
+          $scope.moreTxs = true;
+        } else {
+          $scope.moreTxs = false;
+        }
         var txs = [];
         for(var i = r.data.length-1; i >= 0; i--){
           for(var j = 0; j < r.data[i].type.operations.length; j++){
@@ -452,9 +460,9 @@ app
           };
         }
         if ($scope.parameters){
-          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, window.eztz.utility.mutez(fee), $scope.gas_limit, $scope.storage_limit);
         } else {
-          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, window.eztz.utility.mutez(fee), false, $scope.gas_limit, $scope.storage_limit);
         }
         if (!keys.sk){
           switch($scope.type){
@@ -481,6 +489,7 @@ app
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
+                console.log(e);
                 SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
               });
             break;
@@ -520,6 +529,7 @@ app
     $scope.fee = 0;
     $scope.toaddress = '';
     $scope.parameters = '';
+    $scope.showAccounts = false;
   }
   $scope.updateDelegate = function(){
       if ($scope.delegateType) $scope.dd = $scope.delegateType;

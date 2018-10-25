@@ -99,10 +99,13 @@
                       <span class="opHash"><a target="_blank" href="{{'https://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}... <i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
                   </div>
                   <div class="col-md-1">
-                      <span ng-show="tx.source == accounts[account].address" class="amt red">{{toTez(tx.amount)}}ꜩ</span>
-                      <span ng-show="tx.source != accounts[account].address" class="amt green">{{toTez(tx.amount)}}ꜩ</span>
+                      <span ng-show="tx.source == accounts[account].address" class="amt red">{{toTez(tx.amount).toFixed(3)}}ꜩ</span>
+                      <span ng-show="tx.source != accounts[account].address" class="amt green">{{toTez(tx.amount).toFixed(3)}}ꜩ</span>
                   </div>
                 </div>
+              </div>
+              <div class='tx'>
+                <strong>Only the last 20 transactions are being displayed. <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View more here</a></strong>
               </div>
             </div>
                     
@@ -140,7 +143,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" style="margin-bottom:20px;">
               <div class="col-md-8">
                 <a class="btn-link" ng-click="advancedOptions = true" ng-show="!advancedOptions">Show Advanced Options <i class="fas fa-arrow-down"></i></a>
                 <a class="btn-link" ng-click="advancedOptions = false" ng-show="advancedOptions">Hide Advanced Options <i class="fas fa-arrow-up"></i></a>
@@ -170,7 +173,7 @@
                   </div>
               </div>
             </div>
-            <div class="row" style="margin-top:20px;">
+            <div class="row">
                 <div class="col-md-3">
                   <a ng-click="send()" class="btn btn-small btn-success btn-block">Send</a>
                 </div>

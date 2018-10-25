@@ -9,13 +9,15 @@
       <h2 class="med-title">Validate your TezBox</h2>
     <div class="row text-center">
         <div class="col-md-12">
-            <p class="alert alert-warning"><i class="leftIcon fas fa-exclamation-circle"></i><strong>Please re-enter your seed words and passphrase to confirm that you have correctly recorded these</strong></p>
+            <p class="alert alert-warning"><i class="leftIcon fas fa-exclamation-circle"></i><strong>Please re-enter your seed words and passphrase in full from the previous step. This is to confirm that you have correctly recorded these down.</strong></p>
         </div>
         <div class="col-xs-10 col-xs-offset-1">
             <div class="form-group">
+                <label>Seed Words/Mnenomic (leave a space between each word)<span style="color:red;">*</span></label>
                 <textarea rows=2 class="text-center form-control" placeholder="Enter Seed Words" ng-model="mnemonic"></textarea>
             </div>
             <div class="form-group">
+                <label>Optional Passphrase <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="If no passphrase was set, just leave this blank" tooltip></i></label>
                 <input type="password" class="text-center form-control" ng-model="passphrase" placeholder="Passphrase">
             </div>
         </div>

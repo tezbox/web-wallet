@@ -11,10 +11,10 @@
       <div class="col-xs-4">
         <a ng-click="type = 'ledger'" ng-class="type == 'ledger' ? 'selected' : ''">Ledger</a>
       </div>
-      <!--<div class="col-xs-4">
+      <div class="col-xs-4">
         <a  ng-click="type = 'trezor'" ng-class="type == 'trezor' ? 'selected' : ''">Trezor</a>
       </div>
-      <div class="col-xs-4">
+      <!--<div class="col-xs-4">
         <a  ng-click="type = 'offline'" ng-class="type == 'offline' ? 'selected' : ''">Offline Signer</a>
       </div>-->
     </div>
@@ -24,7 +24,7 @@
         </div>
         <div class="col-xs-10 col-xs-offset-1">
             <div class="form-group">
-               <label class="text-center">HD Derivation Path</label>
+               <label class="text-center">HD Derivation Path <span style="color:red;">*</span></label>
                <p>Advanced option to access different addresses - leave as it is to use the default key</p>
                <input type="text" class="text-center form-control" ng-model="data" placeholder="Address Path">
             </div>

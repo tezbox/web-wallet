@@ -793,35 +793,22 @@ app
   };
 }])
 .controller('RestoreController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
-  $scope.type = 'seed';
+  $scope.type = 'ico';
 
   $scope.seed = '';
   $scope.passphrase = '';
   $scope.private_key = '';
+  $scope.encryption_password = '';
   $scope.email = '';
   $scope.ico_password = '';
   $scope.activation_code = '';
   $scope.cancel = function(){
       $location.path('/new');
   };
-  $scope.restore = function(){
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal("Uh-oh!", "Please enter your seed words");
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal("Uh-oh!", "Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break");
-
-    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal("Uh-oh!", "Please enter your passphrase");
-    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal("Uh-oh!", "Please enter your email from the ICO PDF");
-    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal("Uh-oh!", "Please enter your address/Public Key Hash from the ICO PDF");
-    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal("Uh-oh!", "Please enter your private key");
-    $scope.text = "Restoring...";
-    if ($scope.type == 'seed'){
-      var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.passphrase);          
-    } else if ($scope.type == 'ico'){
-      var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.email + $scope.ico_password);       
-      if ($scope.address != keys.pkh) return SweetAlert.swal("Uh-oh!", "Your fundraiser details don't seem to match - please try again and ensure you are entering your details in correctly.");
-    } else if ($scope.type == 'private'){
-      var keys = window.eztz.crypto.extractKeys($scope.private_key);          
-    }
-    
+  $scope.isEdesk = function(){
+    return ($scope.private_key.substring(0, 5) == "edesk");
+  };
+  var restoreEnd = function(keys){
     var keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh};
     var identity = {
       pkh : keys.pkh,
@@ -842,7 +829,7 @@ app
       }).catch(function(e){
         $scope.$apply(function(){
           window.hideLoader();    
-          return SweetAlert.swal("Uh-oh!", "Activation was unsuccessful - please ensure the code is right, or leave it blank if you have already activated it");
+          return SweetAlert.swal("Uh-oh!", "Activation was unsuccessful - please ensure the code is right, or leave it blank if you have already activated your account");
         });
       });
     } else {
@@ -850,6 +837,37 @@ app
       Storage.restored = true;
       $location.path("/encrypt");
     }
+  }
+  $scope.restore = function(){
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal("Uh-oh!", "Please enter your seed words");
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal("Uh-oh!", "Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break. All words must be seperated by a space.");
+
+    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal("Uh-oh!", "Please enter your passphrase");
+    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal("Uh-oh!", "Please enter your email from the ICO PDF");
+    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal("Uh-oh!", "Please enter your address/Public Key Hash from the ICO PDF");
+    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal("Uh-oh!", "Please enter your private key");
+    if ($scope.type == 'private' && $scope.isEdesk() && !$scope.encryption_password) return SweetAlert.swal("Uh-oh!", "Please enter the encryption password for your edesk private key");
+    $scope.text = "Restoring...";
+    if ($scope.type == 'seed'){
+      var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.passphrase);          
+    } else if ($scope.type == 'ico'){
+      var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.email + $scope.ico_password);       
+      if ($scope.address != keys.pkh) return SweetAlert.swal("Uh-oh!", "Your fundraiser details don't seem to match - please try again and ensure you are entering your details in correctly. The most common issue is an incorrect password.");
+    } else if ($scope.type == 'private'){
+      if ($scope.isEdesk()){
+        return window.eztz.crypto.extractEncryptedKeys($scope.private_key, $scope.encryption_password).then(function(k){
+          $scope.$apply(function(){
+            console.log(k);
+            restoreEnd(k);
+          });
+        }).catch(function(e){
+          return SweetAlert.swal("Uh-oh!", "There was an issue trying to import your encrypted key, please try again.");
+        });
+      } else {        
+        var keys = window.eztz.crypto.extractKeys($scope.private_key);          
+      }
+    }
+    restoreEnd(keys);
   };
 }])
 ;

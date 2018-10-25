@@ -72,6 +72,7 @@ a.btn-link{
   color: #DF385D;
   font-weight: bold;
   text-decoration:underline;
+  cursor: pointer;
 }
 .alert-danger {
     background-color: #f7f4f4;
@@ -391,7 +392,7 @@ h3{
 .med-container {
   width: 900px!important;
   margin-top:100px!important;
-    height: 600px!important;
+    height: 650px!important;
   
 }
 .small-container, .med-container {

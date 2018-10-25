@@ -141,7 +141,6 @@ app
   
   
   setBalance = function(r){
-    console.log(r);
     var rb = parseInt(r);
     var bal = $scope.toTez(rb); 
     $scope.accountDetails.raw_balance = rb;
@@ -387,13 +386,11 @@ app
     }
     refreshTransactions();
     window.eztz.rpc.getBalance($scope.accounts[a].address).then(function(r){
-      console.log(r);
       $scope.$apply(function(){
         $scope.accountLive = true;
         setBalance(r);
       });
     }).catch(function(e){
-      console.log(e);
       $scope.$apply(function(){
         $scope.accountLive = false;
         setBalance(0);

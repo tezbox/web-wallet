@@ -115,7 +115,7 @@ app
   $scope.gas_limit = 200;
   $scope.storage_limit = 0;
   $scope.parameters = '';
-  $scope.delegateType = '';
+  $scope.delegateType = 'undelegated';
   $scope.advancedOptions = false;
   $scope.showCustom = false;
   $scope.showAccounts = false;
@@ -398,10 +398,12 @@ app
       window.eztz.rpc.getDelegate($scope.accounts[a].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
-          var ii = $scope.delegates.keys.indexOf($scope.dd);
-          if (ii >= 0){
+          if ($scope.delegates.keys.indexOf($scope.dd) >= 0){
             $scope.delegateType = $scope.dd;
-          } else 
+          } else if (!$scope.dd){
+            $scope.delegateType = 'undelegated';
+            $scope.dd = '';
+          } else
             $scope.delegateType = '';
         });
       });
@@ -532,10 +534,15 @@ app
     $scope.showAccounts = false;
   }
   $scope.updateDelegate = function(){
-      if ($scope.delegateType) $scope.dd = $scope.delegateType;
-      if (!$scope.dd) {
-        SweetAlert.swal("Uh-oh!", "Please enter or a valid delegate");
-        return;
+      var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
+      if (fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
+      if (fee != parseFloat(fee)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
+      var delegate;
+      if ($scope.delegateType == "undelegated") delegate = "";
+      else {
+        if ($scope.delegateType) $scope.dd = $scope.delegateType;
+        if (!$scope.dd) return SweetAlert.swal("Uh-oh!", "Please enter or a valid delegate");
+        delegate = $scope.dd;
       }
       window.showLoader();
       if ($scope.type == "encrypted"){
@@ -551,7 +558,7 @@ app
           pkh : $scope.accounts[$scope.account].address,
         };
       }
-      var op = window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, $scope.dd, 0)
+      var op = window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, delegate, 0)
       if (!keys.sk){
         switch($scope.type){
           case "ledger":
@@ -570,11 +577,7 @@ app
                 r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
                 return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
               });
-            }).catch(function(e){
-              if (cancelled) return;
-              window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
-            });
+            })
           break;
           case "trezor":
           case "offline":
@@ -588,10 +591,12 @@ app
       op.then(function(r){
         $scope.$apply(function(){
           SweetAlert.swal("Awesome!", "Delegation operation was successful - this may take a few minutes to update", "success");
+          $scope.fee = 0;
           window.hideLoader();
         });
       }).catch(function(r){
         $scope.$apply(function(){
+          console.log(r);
           SweetAlert.swal("Uh-oh!", "Delegation Failed");
           window.hideLoader();
         });

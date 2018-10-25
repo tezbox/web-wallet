@@ -104,7 +104,7 @@
                   </div>
                 </div>
               </div>
-              <div class='tx'>
+              <div ng-show="moreTxs" class='tx'>
                 <strong>Only the last 20 transactions are being displayed. <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View more here</a></strong>
               </div>
             </div>
@@ -195,26 +195,46 @@
               </div>
             </div>
               
-            <div class="row" ng-show="account > 0">
-              <div class="col-md-4">
+            <div ng-show="account > 0">
+              <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                      <label>Delegate Options <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Delegate your account to participate in the baking process. Select a pre-set baker, or enter your own" tooltip></i></label>
+                      <select class="form-control" ng-model="delegateType">
+                        <option value="undelegated">Undelegated</option>
+                        <option value="">Custom</option>
+                        <option value="tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5">CryptoDelegate</option>
+                        <option value="tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY">Tezzigator</option>
+                        <option value="tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ">Tezos.Community</option>
+                        <option value="tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q">HappyTezos</option>
+                      </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
                   <div class="form-group">
-                    <select class="form-control" ng-model="delegateType">
-                      <option value="false">Undelegated</option>
-                      <option value="">Custom</option>
-                      <option value="tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5">CryptoDelegate</option>
-                      <option value="tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY">Tezzigator</option>
-                      <option value="tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ">Tezos.Community</option>
-                      <option value="tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q">HappyTezos</option>
+                    <label>Fee <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the total fee to paid for the transaction. Currently 0 tez fees are accepted." tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">Custom Fee</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">Fee Options</a></label>
+                    <input ng-show="showCustom" type="number" class="form-control" ng-model="customFee">
+                    <select ng-show="!showCustom" class="form-control" ng-model="fee" number-select>
+                      <option value="0">No Fee - 0ꜩ</option>
+                      <option value="0.000001">Low - 1mꜩ</option>
+                      <option value="0.000005">Medium - 5mꜩ</option>
+                      <option value="0.00005">High - 50mꜩ</option>
                     </select>
                   </div>
+                </div>
               </div>
-              <div class="col-md-4">
-                  <div class="form-group" ng-show="!delegateType" placeholder="Custom Delegate Key">
-                    <input type="text" class="form-control" ng-model="dd" >
-                  </div>
+              <div class="row">
+                <div class="col-md-4" ng-show="!delegateType">
+                    <label>Custom Delegate <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Enter your custom delegate address here - it must start with tz..." tooltip></i></label>
+                    <div class="form-group" placeholder="tz">
+                      <input type="text" class="form-control" ng-model="dd" >
+                    </div>
+                </div>
               </div>
-              <div class="col-md-3" >
-                <a ng-click="updateDelegate()" class="btn btn-small btn-success btn-block">Update Delegate</a>
+              <div class="row">
+                <div class="col-md-3" >
+                  <a ng-click="updateDelegate()" class="btn btn-small btn-success btn-block">Update Delegate</a>
+                </div>
               </div>
             </div>
           </div>

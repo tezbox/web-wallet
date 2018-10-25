@@ -63,7 +63,7 @@
     
     
     <div class="row" ng-hide="accountLive">
-      <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>This account has not been added to the blockchain yet - please wait for a baker to include this in a block before you can use this account.</strong></p>
+      <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>This account has not been added to the blockchain yet - please wait for a baker to include this in a block before you can use this account. This error may also show if your device can't connect to the Tezos Network.</strong></p>
     </div>
     <div class="row mainContainer" ng-show="accountLive">
         <div class="col-md-12">
@@ -111,8 +111,11 @@
             <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Destination Address</label>
-                      <input type="text" class="form-control" ng-model="toaddress" >
+                      <label for="exampleInputEmail1">Destination Address <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the address you want to send to - please enter a valid KT1 or tz address" tooltip></i><a ng-show="accounts.length !== 0 && !showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = nextAddress(); showAccounts = true">My Accounts</a><a ng-show="accounts.length !== 0 && showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = ''; showAccounts = false;">Enter Address</a></label>
+                      <input ng-show="!showAccounts" type="text" class="form-control" ng-model="toaddress" placeholder="tz/KT1...">
+                      <select ng-show="showAccounts" class="form-control" ng-model="toaddress">
+                        <option ng-repeat="a in accounts track by a.address" value="{{a.address}}">{{a.title}} - {{a.address}}</option>
+                      </select>
                     </div>
                     
                 </div>
@@ -120,40 +123,54 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Amount</label>
+                      <label for="exampleInputEmail1">Amount <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Please enter an amount in tez. When sending from a tz address, you must leave at least 0.000001 behind" tooltip></i><a style="position: absolute;right: 15px;cursor:pointer;" ng-click="amount = max()">Max</a></label>
                       <input type="number" class="form-control" ng-model="amount" >
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Fee</label>
-                      <input type="number" class="form-control" ng-model="fee" >
+                      <label>Fee <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the total fee to paid for the transaction. Currently 0 tez fees are accepted." tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">Custom Fee</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">Fee Options</a></label>
+                      <input ng-show="showCustom" type="number" class="form-control" ng-model="customFee">
+                      <select ng-show="!showCustom" class="form-control" ng-model="fee" number-select>
+                        <option value="0">No Fee - 0ꜩ</option>
+                        <option value="0.000001">Low - 1mꜩ</option>
+                        <option value="0.000005">Medium - 5mꜩ</option>
+                        <option value="0.00005">High - 50mꜩ</option>
+                      </select>
                     </div>
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-8">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Parameters</label>
-                      <input type="text" class="form-control" placeholder="(optional)" ng-model="parameters" >
-                    </div>
-                </div>
-             </div>
-             <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Gas Limit</label>
-                      <input type="number" class="form-control" ng-model="gas_limit" >
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="exampleInputEmail1">Storage Limit</label>
-                      <input type="number" class="form-control" ng-model="storage_limit" >
-                    </div>
-                </div>
+              <div class="col-md-8">
+                <a class="btn-link" ng-click="advancedOptions = true" ng-show="!advancedOptions">Show Advanced Options <i class="fas fa-arrow-down"></i></a>
+                <a class="btn-link" ng-click="advancedOptions = false" ng-show="advancedOptions">Hide Advanced Options <i class="fas fa-arrow-up"></i></a>
+              </div>
             </div>
-            <div class="row">
+            <div ng-show="advancedOptions">
+              <div class="row">
+                  <div class="col-md-8">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Parameters <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Optional parameters to send as input - this is only required for some smart contracts." tooltip></i></label>
+                        <input type="text" class="form-control" placeholder="(optional)" ng-model="parameters" >
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Gas Limit <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Set the gas limit for this operations. For simple transactions, you can leave this as the defaul" tooltip></i></label>
+                        <input type="number" class="form-control" ng-model="gas_limit" >
+                      </div>
+                  </div>
+                  <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="exampleInputEmail1">Storage Limit <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Set the storage limit for this operations. For simple transactions, you can leave this as the defaul" tooltip></i></label>
+                        <input type="number" class="form-control" ng-model="storage_limit" >
+                      </div>
+                  </div>
+              </div>
+            </div>
+            <div class="row" style="margin-top:20px;">
                 <div class="col-md-3">
                   <a ng-click="send()" class="btn btn-small btn-success btn-block">Send</a>
                 </div>

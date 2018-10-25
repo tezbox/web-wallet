@@ -110,11 +110,15 @@ app
   $scope.transactions = [];
   $scope.amount = 0;
   $scope.fee = 0;
+  $scope.customFee = 0;
   $scope.advancedOptions = false;
   $scope.gas_limit = 200;
   $scope.storage_limit = 0;
   $scope.parameters = '';
   $scope.delegateType = '';
+  $scope.advancedOptions = false;
+  $scope.showCustom = false;
+  $scope.showAccounts = false;
   $scope.dd = '';
   $scope.block = {
     net : "Loading..",
@@ -191,6 +195,16 @@ app
   refreshAll = function(){
     refreshHash();
     refreshTransactions();
+  }
+  $scope.nextAddress = function(){
+    if ($scope.accounts.length === 0) return $scope.accounts[0].address;
+    return ($scope.account === 0 ? $scope.accounts[1].address : $scope.accounts[0].address);
+  }
+  $scope.max = function(){
+    var max = $scope.accountDetails.raw_balance;
+    var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
+    if ($scope.account === 0) max -= 1;
+    return $scope.toTez(max) - fee;
   }
   $scope.toDate = function(d){
     var myDate = new Date(d), date = myDate.getDate(), month = myDate.getMonth(), year = myDate.getFullYear(), hours = myDate.getHours(), minutes = myDate.getMinutes();
@@ -405,11 +419,14 @@ app
     window.copyToClipboard($scope.accounts[$scope.account].address);
   };
   $scope.send = function(){
-    if (!$scope.amount || !$scope.toaddress) return SweetAlert.swal("Uh-oh!", "Please enter amount and a destination");
+    var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
+    if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal("Uh-oh!", "Please enter a valid Destination Address");
+    if ($scope.toaddress == $scope.accounts[$scope.account].address) return SweetAlert.swal("Uh-oh!", "You can't send to yourself - please select another Destination Address");
     if ($scope.amount < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
-    if ($scope.fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
+    if ($scope.amount > $scope.max()) return SweetAlert.swal("Uh-oh!", "The amount you entered exceeds the current balance for this account. Manager addresses (those that start with tz) must leave at least 0.000001 tez behind. You also need to take into account the fee you are using");
+    if (fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
     if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
-    if ($scope.fee != parseFloat($scope.fee)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
+    if (fee != parseFloat(fee)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
     SweetAlert.swal({
       title: "Are you sure?",
       text: "You are about to send " + $scope.amount + "XTZ to " + $scope.toaddress + " - this transaction is irreversible",
@@ -435,9 +452,9 @@ app
           };
         }
         if ($scope.parameters){
-          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, $scope.fee, $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
         } else {
-          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, $scope.fee, false, $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit);
         }
         if (!keys.sk){
           switch($scope.type){
@@ -499,6 +516,7 @@ app
   };
   $scope.clear = function(){
     $scope.amount = 0;
+    $scope.customFee = 0;
     $scope.fee = 0;
     $scope.toaddress = '';
     $scope.parameters = '';

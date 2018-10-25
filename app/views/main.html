@@ -14,20 +14,20 @@
     
     <div class="mainBody">
       <div class="side" style="padding-bottom: 100px;">
-        <h3 style="">My Accounts</h3>
+        <h3 style="">{{translate("my_accounts")}}</h3>
         <div class="sideContainer">
         <ul class="sidebar">
           <li ng-repeat="a in accounts track by a.address"><a ng-click="loadAccount($index)"><blocky class="avatar" seed='{{a.address}}' size='8' scale='16'></blocky> {{a.title}}<span>{{a.address}}</span></a></li>
-          <li><a style="padding-top: 8px!important;" ng-click="add()">Add Account <i class="fa fa-plus" ></i></a></li>
+          <li><a style="padding-top: 8px!important;" ng-click="add()">{{translate("add_account")}} <i class="fa fa-plus" ></i></a></li>
         </ul>
         </div>
         <div  style="position:absolute;bottom:30px;font-size:12px;">
         <p>
         {{block.net}}<br />
-        Level {{block.level}}<br />
+        {{translate("level")}} {{block.level}}<br />
         <strong>{{block.proto}}</strong><br />
         {{setting.rpc}}
-        <p class="copy text-center"><a href="https://tezbox.github.io/disclaimer.html" target="_blank">Disclaimer</a> - <a href="https://tezbox.github.io/terms.html" target="_blank">Terms</a> - <a href="https://tezbox.github.io/privacy.html" target="_blank">Privacy</a></p>
+        <p class="copy text-center"><a href="https://tezbox.com/disclaimer.html" target="_blank">{{translate("disclaimer")}}</a> - <a href="https://tezbox.com/terms.html" target="_blank">{{translate("terms")}}</a> - <a href="https://tezbox.com/privacy.html" target="_blank">{{translate("privacy")}}</a></p>
         </p>
         </div>
       </div>
@@ -48,7 +48,7 @@
               </button>
               {{accounts[account].address}}
             </h5>
-            <strong><a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View on tzscan <i class="fas fa-external-link-alt"></i></a></strong>
+            <strong><a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">{{translate("view_on_tzscan")}} <i class="fas fa-external-link-alt"></i></a></strong>
             <h5 class="balance">
               {{accountDetails.balance}} 
               <button ng-click="refresh()" class="icon-button" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -57,29 +57,29 @@
             </h5>
         </div>
         <div class="col-md-3">
-          <qrcode style="margin:25px;"  error-correction-level="H" size="180" data="{{accounts[account].address}}" color="#FFF" background="#000"></qrcode>
+          <qrcode style="margin:25px;" error-correction-level="H" size="180" data="{{accounts[account].address}}" color="#FFF" background="#000"></qrcode>
         </div>
     </div>
     
     
     <div class="row" ng-hide="accountLive">
-      <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>This account has not been added to the blockchain yet - please wait for a baker to include this in a block before you can use this account. This error may also show if your device can't connect to the Tezos Network.</strong></p>
+      <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>{{translate("account_notadded")}}</strong></p>
     </div>
     <div class="row mainContainer" ng-show="accountLive">
         <div class="col-md-12">
 
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
-          <li role="presentation" class="active"><a data-target="#transactions" aria-controls="transactions" role="tab" data-toggle="tab"><i class="fas fa-exchange-alt"></i> Transactions</a></li>
-          <li role="presentation"><a data-target="#send" aria-controls="send" role="tab" data-toggle="tab"><i class="fas fa-paper-plane"></i> Send</a></li>
-          <li role="presentation"><a data-target="#delegate" aria-controls="delegate" role="tab" data-toggle="tab"><i class="fa fa-users"></i> Delegate</a></li>
-          <li role="presentation"><a data-target="#settings" aria-controls="settings" role="tab" data-toggle="tab"><i class="fas fa-sliders-h"></i> Options</a></li>
+          <li role="presentation" class="active"><a data-target="#transactions" aria-controls="transactions" role="tab" data-toggle="tab"><i class="fas fa-exchange-alt"></i> {{translate("transactions")}}</a></li>
+          <li role="presentation"><a data-target="#send" aria-controls="send" role="tab" data-toggle="tab"><i class="fas fa-paper-plane"></i> {{translate("send")}}</a></li>
+          <li role="presentation"><a data-target="#delegate" aria-controls="delegate" role="tab" data-toggle="tab"><i class="fa fa-users"></i> {{translate("delegate")}}</a></li>
+          <li role="presentation"><a data-target="#settings" aria-controls="settings" role="tab" data-toggle="tab"><i class="fas fa-sliders-h"></i> {{translate("options")}}</a></li>
         </ul>
 
         <!-- Tab panes -->
         <div class="tab-content mainTabs">
           <div role="tabpanel" class="tab-pane active text-center" id="transactions">
-            <strong ng-hide="transactions.length != 0">No transactions available</strong>
+            <strong ng-hide="transactions.length != 0">{{translate("no_transactions")}}</strong>
             
             <div class="transactions" ng-hide="transactions.length == 0">
               <div class='tx' ng-repeat="tx in transactions track by $index">
@@ -87,13 +87,13 @@
                   <div class="col-md-3">
                     <blocky ng-show="tx.source != accounts[account].address" class="avatar" seed='{{tx.source}}' size='8' scale='16'></blocky>
                     <blocky ng-show="tx.source == accounts[account].address" class="avatar" seed='{{tx.destination}}' size='8' scale='16'></blocky>
-                    <span ng-show="tx.source != accounts[account].address" class="dir green"><strong>RECEIVED</strong></span>
-                    <span ng-show="tx.source == accounts[account].address" class="dir red"><strong>SENT</strong></span>
+                    <span ng-show="tx.source != accounts[account].address" class="dir green"><strong>{{translate("received")}}</strong></span>
+                    <span ng-show="tx.source == accounts[account].address" class="dir red"><strong>{{translate("sent")}}</strong></span>
                     <br />{{toDate(tx.time)}}
                   </div>
                   <div class="col-md-5">
-                      <span class="date" ng-show="tx.source != accounts[account].address" >from {{tx.source.slice(0,25)}}...</span>
-                      <span class="date" ng-show="tx.source == accounts[account].address" >to {{tx.destination.slice(0,25)}}...</span>
+                      <span class="date" ng-show="tx.source != accounts[account].address" >{{translate("from")}} {{tx.source.slice(0,25)}}...</span>
+                      <span class="date" ng-show="tx.source == accounts[account].address" >{{translate("to")}} {{tx.destination.slice(0,25)}}...</span>
                   </div>
                   <div class="col-md-3">
                       <span class="opHash"><a target="_blank" href="{{'https://tzscan.io/' + tx.hash}}">{{tx.hash.slice(0,15)}}... <i class="fa fa-external-link-alt" aria-hidden="true"></i></a></span>
@@ -105,7 +105,7 @@
                 </div>
               </div>
               <div ng-show="moreTxs" class='tx'>
-                <strong>Only the last 20 transactions are being displayed. <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">View more here</a></strong>
+                <strong>{{translate("last_20_transactions")}} <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}">{{translate("view_more_here")}}</a></strong>
               </div>
             </div>
                     
@@ -114,7 +114,7 @@
             <div class="row">
                 <div class="col-md-8">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Destination Address <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the address you want to send to - please enter a valid KT1 or tz address" tooltip></i><a ng-show="accounts.length !== 0 && !showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = nextAddress(); showAccounts = true">My Accounts</a><a ng-show="accounts.length !== 0 && showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = ''; showAccounts = false;">Enter Address</a></label>
+                      <label for="exampleInputEmail1">{{translate("destination_address")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('destination_tooltip')}}" tooltip></i><a ng-show="accounts.length !== 0 && !showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = nextAddress(); showAccounts = true">{{translate("my_accounts")}}</a><a ng-show="accounts.length !== 0 && showAccounts" style="position: absolute;right: 15px;cursor:pointer;" ng-click="toaddress = ''; showAccounts = false;">{{translate("enter_address")}}</a></label>
                       <input ng-show="!showAccounts" type="text" class="form-control" ng-model="toaddress" placeholder="tz/KT1...">
                       <select ng-show="showAccounts" class="form-control" ng-model="toaddress">
                         <option ng-repeat="a in accounts track by a.address" value="{{a.address}}">{{a.title}} - {{a.address}}</option>
@@ -126,34 +126,34 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
-                      <label for="exampleInputEmail1">Amount <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Please enter an amount in tez. When sending from a tz address, you must leave at least 0.000001 behind" tooltip></i><a style="position: absolute;right: 15px;cursor:pointer;" ng-click="amount = max()">Max</a></label>
+                      <label for="exampleInputEmail1">{{translate("amount")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('amount_tooltip')}}" tooltip></i><a style="position: absolute;right: 15px;cursor:pointer;" ng-click="amount = max()">{{translate("max")}}</a></label>
                       <input type="number" class="form-control" ng-model="amount" >
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                      <label>Fee <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the total fee to paid for the transaction. Currently 0 tez fees are accepted." tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">Custom Fee</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">Fee Options</a></label>
+                      <label>{{translate("fee")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('fee_tooltip')}}" tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">{{translate("custom_fee")}}</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">{{translate("fee_options")}}</a></label>
                       <input ng-show="showCustom" type="number" class="form-control" ng-model="customFee">
                       <select ng-show="!showCustom" class="form-control" ng-model="fee" number-select>
-                        <option value="0">No Fee - 0ꜩ</option>
-                        <option value="0.000001">Low - 1mꜩ</option>
-                        <option value="0.000005">Medium - 5mꜩ</option>
-                        <option value="0.00005">High - 50mꜩ</option>
+                        <option value="0">{{translate("no_fee")}} - 0ꜩ</option>
+                        <option value="0.000001">{{translate("low")}} - 1mꜩ</option>
+                        <option value="0.000005">{{translate("medium")}} - 5mꜩ</option>
+                        <option value="0.00005">{{translate("high")}} - 50mꜩ</option>
                       </select>
                     </div>
                 </div>
             </div>
             <div class="row" style="margin-bottom:20px;">
               <div class="col-md-8">
-                <a class="btn-link" ng-click="advancedOptions = true" ng-show="!advancedOptions">Show Advanced Options <i class="fas fa-arrow-down"></i></a>
-                <a class="btn-link" ng-click="advancedOptions = false" ng-show="advancedOptions">Hide Advanced Options <i class="fas fa-arrow-up"></i></a>
+                <a class="btn-link" ng-click="advancedOptions = true" ng-show="!advancedOptions">{{translate("show_advanced_options")}} <i class="fas fa-arrow-down"></i></a>
+                <a class="btn-link" ng-click="advancedOptions = false" ng-show="advancedOptions">{{translate("hide_advanced_options")}} <i class="fas fa-arrow-up"></i></a>
               </div>
             </div>
             <div ng-show="advancedOptions">
               <div class="row">
                   <div class="col-md-8">
                       <div class="form-group">
-                        <label for="exampleInputEmail1">Parameters <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Optional parameters to send as input - this is only required for some smart contracts." tooltip></i></label>
+                        <label for="exampleInputEmail1">{{translate("parameters")}} <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('parameters_tooltip')}}" tooltip></i></label>
                         <input type="text" class="form-control" placeholder="(optional)" ng-model="parameters" >
                       </div>
                   </div>
@@ -161,13 +161,13 @@
               <div class="row">
                   <div class="col-md-4">
                       <div class="form-group">
-                        <label for="exampleInputEmail1">Gas Limit <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Set the gas limit for this operations. For simple transactions, you can leave this as the defaul" tooltip></i></label>
+                        <label for="exampleInputEmail1">{{translate("gas_limit")}} <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('gas_limit_tooltip')}}" tooltip></i></label>
                         <input type="number" class="form-control" ng-model="gas_limit" >
                       </div>
                   </div>
                   <div class="col-md-4">
                       <div class="form-group">
-                        <label for="exampleInputEmail1">Storage Limit <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Set the storage limit for this operations. For simple transactions, you can leave this as the defaul" tooltip></i></label>
+                        <label for="exampleInputEmail1">{{translate("storage_limit")}} <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('storage_limit_tooltip')}}" tooltip></i></label>
                         <input type="number" class="form-control" ng-model="storage_limit" >
                       </div>
                   </div>
@@ -175,23 +175,23 @@
             </div>
             <div class="row">
                 <div class="col-md-3">
-                  <a ng-click="send()" class="btn btn-small btn-success btn-block">Send</a>
+                  <a ng-click="send()" class="btn btn-small btn-success btn-block">{{translate("send")}}</a>
                 </div>
                 <div class="col-md-3">
-                  <a ng-click="clear()" class="btn btn-small btn-primary btn-block">Clear</a>
+                  <a ng-click="clear()" class="btn btn-small btn-primary btn-block">{{translate("clear")}}</a>
                 </div>
             </div>
           </div>
           <div role="tabpanel" class="tab-pane" id="delegate">
           <div class="row">
               <div class="col-md-12" ng-show="account > 0 && delegateType == ''">
-                  <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>Please ensure the delegate you are entering has been registered to participate in the baking protocol.</strong></p>
+                  <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>{{translate("ensure_delegate")}}</strong></p>
               </div>
               <div class="col-md-12" ng-show="account > 0 && delegateType != ''">
-                  <p class="alert alert-warning"><i class="leftIcon fas fa-exclamation-circle"></i><strong>TezBox doesn't endorse any of the listed delegation services listed below - please ensure you are doing your own research into each one.</strong></p>
+                  <p class="alert alert-warning"><i class="leftIcon fas fa-exclamation-circle"></i><strong>{{translate("endorse_delegate")}}</strong></p>
               </div>
               <div class="col-md-12" ng-show="account == 0">
-                  <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>Delegation from this address is not allowed (lowercase tz addresses) - these are referred to as implicit addresses and the protocol doesn't allow them to delegate to another key. Please create an account (KT address) to use for delegation.</strong></p>
+                  <p class="alert alert-danger"><i class="leftIcon fas fa-exclamation-circle"></i><strong>{{translate("disabled_delegate")}}</strong></p>
               </div>
             </div>
               
@@ -199,7 +199,7 @@
               <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
-                      <label>Delegate Options <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Delegate your account to participate in the baking process. Select a pre-set baker, or enter your own" tooltip></i></label>
+                      <label>{{translate("delegate_options")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('delegate_options_tooltip')}}" tooltip></i></label>
                       <select class="form-control" ng-model="delegateType">
                         <option value="undelegated">Undelegated</option>
                         <option value="">Custom</option>
@@ -211,21 +211,21 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                  <div class="form-group">
-                    <label>Fee <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="This is the total fee to paid for the transaction. Currently 0 tez fees are accepted." tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">Custom Fee</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">Fee Options</a></label>
-                    <input ng-show="showCustom" type="number" class="form-control" ng-model="customFee">
-                    <select ng-show="!showCustom" class="form-control" ng-model="fee" number-select>
-                      <option value="0">No Fee - 0ꜩ</option>
-                      <option value="0.000001">Low - 1mꜩ</option>
-                      <option value="0.000005">Medium - 5mꜩ</option>
-                      <option value="0.00005">High - 50mꜩ</option>
-                    </select>
-                  </div>
+                    <div class="form-group">
+                      <label>{{translate("fee")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('fee_tooltip')}}" tooltip></i><a ng-show="!showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = fee; showCustom = true">{{translate("custom_fee")}}</a><a ng-show="showCustom" style="position: absolute;right: 15px;cursor:pointer;" ng-click="customFee = 0; showCustom = false">{{translate("fee_options")}}</a></label>
+                      <input ng-show="showCustom" type="number" class="form-control" ng-model="customFee">
+                      <select ng-show="!showCustom" class="form-control" ng-model="fee" number-select>
+                        <option value="0">{{translate("no_fee")}} - 0ꜩ</option>
+                        <option value="0.000001">{{translate("low")}} - 1mꜩ</option>
+                        <option value="0.000005">{{translate("medium")}} - 5mꜩ</option>
+                        <option value="0.00005">{{translate("high")}} - 50mꜩ</option>
+                      </select>
+                    </div>
                 </div>
               </div>
               <div class="row">
                 <div class="col-md-4" ng-show="!delegateType">
-                    <label>Custom Delegate <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="Enter your custom delegate address here - it must start with tz..." tooltip></i></label>
+                    <label>{{translate("custom_delegate")}} <span style="color:red;">*</span> <i class="leftIcon fas fa-question-circle" data-toggle="tooltip" data-placement="right" title="{{translate('custom_delegate_tooltip')}}" tooltip></i></label>
                     <div class="form-group" placeholder="tz">
                       <input type="text" class="form-control" ng-model="dd" >
                     </div>
@@ -241,7 +241,7 @@
           <div role="tabpanel" class="tab-pane" id="settings">
             <div class="row">
               <div class="col-md-12">
-                <h3>Title</h3>
+                <h3>{{translate('title')}}</h3>
               </div>
             </div>
               
@@ -252,15 +252,15 @@
                   </div>
               </div>
               <div class="col-md-3" >
-                <a ng-click="saveTitle()" class="btn btn-small btn-success btn-block">Update Title</a>
+                <a ng-click="saveTitle()" class="btn btn-small btn-success btn-block">{{translate('update_title')}}</a>
               </div>
             </div>
             
             <div ng-hide="account > 0">
             <div class="row">
               <div class="col-md-12">
-                <h3>Import KT1 account</h3>
-                <p>You can use this to import KT1 addresses that have been originated else where (or after you have restored your account). You can view all of your originated KT1 addresses on <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
+                <h3>{{translate('import_kt1_account')}}</h3>
+                <p>{{translate('import_kt1_account_msg')}} <a target="_blank" href="https://tzscan.io/{{accounts[account].address}}?default=origination">tzscan.io</a>
               </div>
             </div>
               
@@ -271,7 +271,7 @@
                   </div>
               </div>
               <div class="col-md-3" >
-                <a ng-click="import()" class="btn btn-small btn-success btn-block">Import</a>
+                <a ng-click="import()" class="btn btn-small btn-success btn-block">{{translate('import')}}</a>
               </div>
             </div>
             </div>
@@ -279,13 +279,13 @@
 
             <div class="row" ng-show="account > 0">
               <div class="col-md-12">
-                <h3>Remove Account</h3>
+                <h3>{{translate('remove_account')}}</h3>
               </div>
             </div>
               
             <div class="row" ng-show="account > 0">
               <div class="col-md-3">
-                <a ng-click="remove()" class="btn btn-small btn-success btn-block">Remove Account</a>
+                <a ng-click="remove()" class="btn btn-small btn-success btn-block">{{translate('remove_account')}}</a>
               </div>
             </div>
           </div>
@@ -296,8 +296,6 @@
       </div>
     </div>
     </div>
-      
-
       </div>
     </div>
 </div>

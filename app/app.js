@@ -5,6 +5,9 @@ var app = angular.module('popup', [
   'monospaced.qrcode',
   'oitozero.ngSweetAlert'
 ])
+.run(function($rootScope, Lang) {
+  $rootScope.translate = Lang.translate;
+})
 .config(function($routeProvider) {
   $routeProvider
   .when("/new", {

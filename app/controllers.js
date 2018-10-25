@@ -88,7 +88,7 @@ app
     }
   };
 }])
-.controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', function($scope, $location, $http, Storage, SweetAlert) {
+.controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
      $location.path('/new');
@@ -187,7 +187,7 @@ app
         $scope.block = {
           net : r.chain_id,
           level : r.header.level,
-          proto : "Connected to " + (typeof protos[r.protocol] != 'undefined' ? protos[r.protocol] : r.protocol.substring(0,7) + "..."),
+          proto : Lang.translate("connected_to") + " " + (typeof protos[r.protocol] != 'undefined' ? protos[r.protocol] : r.protocol.substring(0,7) + "..."),
         };
       });
     }).catch(function(e){
@@ -195,7 +195,7 @@ app
         $scope.block = {
           net : "Error",
           level : "N/A",
-          proto : "Not Connected",
+          proto : Lang.translate("not_connected"),
         };
       });
     });
@@ -251,7 +251,7 @@ app
     window.showLoader();
     
     window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
-      if (r != $scope.accounts[0].address) return SweetAlert.swal("Uh-oh!", "That contract is not managed by your account key");
+      if (r != $scope.accounts[0].address) return SweetAlert.swal("Uh-oh!", "That account is not managed by your account key");
       $scope.$apply(function(){
         $scope.accounts.push(
           {

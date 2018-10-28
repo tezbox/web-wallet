@@ -1,15 +1,27 @@
 app
-.controller('NewController', ['$scope', '$location', 'Storage', function($scope, $location, Storage) {
+.controller('NewController', ['$scope', '$location', 'Storage', 'Lang', function($scope, $location, Storage, Lang) {
   $scope.setting = Storage.loadSetting();
   
   if (!$scope.setting) {
     $scope.setting = {
       rpc : "https://rpc.tezrpc.me",
+      language : "english",
       disclaimer : false
     };
     Storage.setSetting($scope.setting);
+  } else {
+    //Patch settings
+    var change = false;
+    if (typeof $scope.setting.language == 'undefined'){
+      $scope.setting.language = "english";
+      change = true;
+    }
+    Storage.setSetting($scope.setting);
   }
+  
+  //Set provider and language - TODO: Move to settings
   window.eztz.node.setProvider($scope.setting.rpc);
+  Lang.setLang($scope.setting.language);
   
   var routeUser = function(){
     var ss = Storage.loadStore();
@@ -22,12 +34,16 @@ app
   if ($scope.setting.disclaimer) {
     routeUser();
   }
+  
   $scope.acceptDisclaimer = function(){
     $scope.setting.disclaimer = true;
     Storage.setSetting($scope.setting);
     routeUser();
   };
-  
+  $scope.unacceptDisclaimer = function(){
+    $scope.setting.disclaimer = false;
+    Storage.setSetting($scope.setting);
+  };
   $scope.restore = function(){
     $location.path('/restore');
   };
@@ -52,7 +68,6 @@ app
     var mm = m.split(" ");
     return $sce.trustAsHtml("<span>"+mm.join("</span> <span>")+"</span>");
   }
-  $scope.newMnemonic();
   $scope.create = function(){
     var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
     keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh};
@@ -64,25 +79,28 @@ app
     Storage.setStore(identity, keys);
     $location.path("/validate");
   };
+  
+  $scope.newMnemonic();
 }])
-.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 'SweetAlert', function($scope, $location, Storage, $sce, SweetAlert) {
+.controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 'SweetAlert', 'Lang', function($scope, $location, Storage, $sce, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
     $location.path('/main');
   }  else if (ss && ss.ensk){
     $location.path('/unlock');
   }
+
+  $scope.passphrase = '';
+  $scope.mnemonic = '';
+  
   $scope.cancel = function(){
     Storage.clearStore();
     $location.path('/new');
-  };
-  
-  $scope.passphrase = '';
-  $scope.mnemonic = '';
+  };  
   $scope.validate = function(){
     var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
     if (keys.pkh != ss.pkh) {
-      SweetAlert.swal("Uh-oh!", "Sorry, those details do not match - please try again, or go back and create a new account again");
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('details_dont_match'), 'error');
     } else {        
       $location.path("/encrypt");
     }
@@ -91,7 +109,7 @@ app
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
-     $location.path('/new');
+     //$location.path('/new');
   }
   if (typeof ss.temp != 'undefined') delete ss.temp;
   $scope.type = "encrypted";
@@ -144,7 +162,16 @@ app
     ]
   };
   
-  
+  $scope.privateKey = '';
+  $scope.password = '';
+  $scope.showPrivatekey = function(){
+    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'));
+    if ($scope.password == Storage.password) {
+      $scope.privateKey = Storage.keys.sk;
+    } else { 
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'));
+    }
+  }
   setBalance = function(r){
     var rb = parseInt(r);
     var bal = $scope.toTez(rb); 
@@ -170,10 +197,12 @@ app
             if (r.data[i].type.operations[j].kind != 'transaction' || r.data[i].type.operations[j].failed) continue;
             txs.push({
               "amount" : r.data[i].type.operations[j].amount,
+              "fee" : r.data[i].type.operations[j].fee,
               "destination" : r.data[i].type.operations[j].destination.tz,
               "hash" : r.data[i].hash,
               "source" : r.data[i].type.operations[j].src.tz,
               "time" : r.data[i].type.operations[j].timestamp,
+              "operationHash" : r.data[i].hash,
             });
           }
         }
@@ -205,14 +234,15 @@ app
     refreshTransactions();
   }
   $scope.nextAddress = function(){
-    if ($scope.accounts.length === 0) return $scope.accounts[0].address;
-    return ($scope.account === 0 ? $scope.accounts[1].address : $scope.accounts[0].address);
+    console.log($scope.accounts.length);
+    if ($scope.accounts.length === 1) return $scope.accounts[0].address;
+    else return ($scope.account === 0 ? $scope.accounts[1].address : $scope.accounts[0].address);
   }
   $scope.max = function(){
     var max = $scope.accountDetails.raw_balance;
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
     if ($scope.account === 0) max -= 1;
-    return $scope.toTez(max) - fee;
+    return Math.max($scope.toTez(max - fee), 0);
   }
   $scope.toDate = function(d){
     var myDate = new Date(d), date = myDate.getDate(), month = myDate.getMonth(), year = myDate.getFullYear(), hours = myDate.getHours(), minutes = myDate.getMinutes();
@@ -235,7 +265,7 @@ app
   } 
   $scope.saveTitle = function(){
     if (!$scope.tt){
-        SweetAlert.swal("Uh-oh!", "Please enter a new title");
+        SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_new_title'));
         return;
     }
     $scope.accounts[$scope.account].title = $scope.tt;
@@ -244,14 +274,14 @@ app
     $scope.refresh();
   };   
   $scope.import = function(){
-    if (!$scope.kt1) return SweetAlert.swal("Uh-oh!", "Please enter the KT1 address to import");
+    if (!$scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_address'));
     for(var i = 0; i < $scope.accounts.length; i++){
-      if ($scope.accounts[i].address == $scope.kt1) return SweetAlert.swal("Uh-oh!", "That address is already linked to your wallet!");
+      if ($scope.accounts[i].address == $scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_linked'));
     }
     window.showLoader();
     
     window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
-      if (r != $scope.accounts[0].address) return SweetAlert.swal("Uh-oh!", "That account is not managed by your account key");
+      if (r != $scope.accounts[0].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_manager'));
       $scope.$apply(function(){
         $scope.accounts.push(
           {
@@ -269,17 +299,17 @@ app
       })
     }).catch(function(r){
       window.hideLoader();
-      SweetAlert.swal("Uh-oh!", "There was an error importing that account");
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_importing'));
     });
   };   
   $scope.remove = function(){
     if ($scope.account === 0) return;
     SweetAlert.swal({
-      title: "Are you sure?",
-      text: "You are about to remove this account from your wallet! (You can always restore this account in future by going to Options > Import)",
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('remove_account_warning'),
       type : "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, remove it!",
+      confirmButtonText: Lang.translate('yes_remove_it'),
       closeOnConfirm: true
     },
     function(isConfirm){
@@ -293,13 +323,14 @@ app
       }
     });
   };
+  
   $scope.add = function(){
     SweetAlert.swal({
-      title: "Are you sure?",
-      text: "Creating a new account incurs an origination fee of ~0.257 XTZ. Do you want to continue?)",
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('originate_warning'),
       type : "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, continue!",
+      confirmButtonText: Lang.translate('yes_continue'),
       closeOnConfirm: true
     },
     function(isConfirm){
@@ -309,13 +340,13 @@ app
           var keys = {
             sk : Storage.keys.sk,
             pk : Storage.keys.pk,
-            pkh : $scope.accounts[$scope.account].address,
+            pkh : $scope.accounts[0].address,
           };
         } else {
           var keys = {
             sk : false,
             pk : Storage.keys.pk,
-            pkh : $scope.accounts[$scope.account].address,
+            pkh : $scope.accounts[0].address,
           };
         }
         var op = window.eztz.rpc.account(keys, 0, true, true, null, 0)
@@ -324,9 +355,10 @@ app
             case "ledger":
               var cancelled = false;
               op = op.then(function(r){
+                console.log($scope.type);
                 SweetAlert.swal({
-                  title: "Ledger",
-                  text: "Please confirm the transaction on your Ledger Nano S Device",
+                  title: Lang.translate('ledger'),
+                  text: Lang.translate('ledger_confirm_transaction'),
                   type : "warning",
                   showCancelButton: true,
                   showConfirmButton: false,
@@ -340,14 +372,14 @@ app
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
-                SweetAlert.swal("Uh-oh!", "There was an error signing this operation with your Ledger")
+                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
               });
             break;
             case "trezor":
             case "offline":
             default:
               window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
               return;
             break;
           }
@@ -366,9 +398,9 @@ app
               ss.accounts = $scope.accounts;
               ss.account = $scope.account;
               Storage.setStore(ss);
-              SweetAlert.swal("Awesome!", "Your new account has been originated - this may take a few minutes to be included on the blockchain", "success");
+              SweetAlert.swal(Lang.translate('awesome'), Lang.translate('new_account_originated'), "success");
             } else {
-              SweetAlert.swal("Uh-oh!", "Error: awaiting existing origination to activate");
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_origination_awaiting'));
             }
             $scope.refresh();
             window.hideLoader();
@@ -377,8 +409,8 @@ app
           window.hideLoader();
           if (typeof r.errors !== 'undefined'){
             ee = r.errors[0].id.split(".").pop();
-            SweetAlert.swal("Uh-oh!", r.error + ": Error (" + ee + ")");
-          } else SweetAlert.swal("Uh-oh!", "There was an error adding account. Please ensure your main account has funds available");
+            SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": Error (" + ee + ")");
+          } else SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('origination_error'));
         });
       }
     });
@@ -390,9 +422,9 @@ app
     $scope.tt = $scope.accounts[$scope.account].title;;
     Storage.setStore(ss);
     $scope.accountDetails = {
-        balance : "Loading...",
-        usd : "Loading...",
-        raw_balance : "Loading...",
+        balance : Lang.translate('loading'),
+        usd : Lang.translate('loading'),
+        raw_balance : Lang.translate('loading'),
     };
     if (a !== 0){
       window.eztz.rpc.getDelegate($scope.accounts[a].address).then(function(r){
@@ -425,24 +457,24 @@ app
       $scope.loadAccount($scope.account);
   };
   $scope.copy = function(){
-    SweetAlert.swal("Awesome!", "The address has been copied to your clipboard", "success");
+    SweetAlert.swal(Lang.translate('awesome'), Lang.translate('copy_clipboard'), "success");
     window.copyToClipboard($scope.accounts[$scope.account].address);
   };
   $scope.send = function(){
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
-    if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal("Uh-oh!", "Please enter a valid Destination Address");
-    if ($scope.toaddress == $scope.accounts[$scope.account].address) return SweetAlert.swal("Uh-oh!", "You can't send to yourself - please select another Destination Address");
-    if ($scope.amount < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
-    if ($scope.amount > $scope.max()) return SweetAlert.swal("Uh-oh!", "The amount you entered exceeds the current balance for this account. Manager addresses (those that start with tz) must leave at least 0.000001 tez behind. You also need to take into account the fee you are using");
-    if (fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
-    if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
-    if (fee != parseFloat(fee)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
+    if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_destinaton'));
+    if ($scope.toaddress == $scope.accounts[$scope.account].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_send_self'));
+    if ($scope.amount < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_amount'));
+    if ($scope.amount > $scope.max()) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_amount_exceeds'));
+    if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'));
+    if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_amount'));
+    if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'));
     SweetAlert.swal({
-      title: "Are you sure?",
-      text: "You are about to send " + $scope.amount + "XTZ to " + $scope.toaddress + " - this transaction is irreversible",
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('transaction_confirm_info', [$scope.amount, $scope.toaddress]),
       type : "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, send it!",
+      confirmButtonText: Lang.translate('yes_send_it'),
       closeOnConfirm: true
     },
     function(isConfirm){
@@ -462,9 +494,9 @@ app
           };
         }
         if ($scope.parameters){
-          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, window.eztz.utility.mutez(fee), $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
         } else {
-          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, window.eztz.utility.mutez(fee), false, $scope.gas_limit, $scope.storage_limit);
+          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit);
         }
         if (!keys.sk){
           switch($scope.type){
@@ -472,8 +504,8 @@ app
               var cancelled = false;
               op = op.then(function(r){
                 SweetAlert.swal({
-                  title: "Ledger",
-                  text: "Please confirm this transaction on your Ledger Nano S Device",
+                  title: Lang.translate('ledger'),
+                  text: Lang.translate('ledger_confirm_transaction'),
                   type : "warning",
                   showCancelButton: true,
                   showConfirmButton: false,
@@ -486,20 +518,20 @@ app
                 }).catch(function(e){
                 if (cancelled) return;
                   window.hideLoader();
-                  SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
+                  SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
                 });
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
                 console.log(e);
-                SweetAlert.swal("Uh-oh!", "There was an error signing this transaction with your Ledger")
+                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
               });
             break;
             case "trezor":
             case "offline":
             default:
               window.hideLoader();
-              SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
               return;
             break;
           }
@@ -507,7 +539,7 @@ app
         op.then(function(r){
           $scope.$apply(function(){
             window.hideLoader();
-            SweetAlert.swal("Awesome!", "Transaction has been sent - this may take a few minutes to be included on the blockchain", "success");
+            SweetAlert.swal(Lang.translate('awesome'), Lang.translate('transaction_sent'), "success");
             refreshTransactions();
             $scope.clear();
           });
@@ -516,9 +548,9 @@ app
             window.hideLoader();
             if (typeof r.errors !== 'undefined'){
               ee = r.errors[0].id.split(".").pop();
-              SweetAlert.swal("Uh-oh!", "Operation Failed! " + r.error + ": Error (" + ee + ")");
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")");
             } else {
-              SweetAlert.swal("Uh-oh!", "Operation Failed! Please check your inputs");
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'));
             }
           });
         });
@@ -535,13 +567,13 @@ app
   }
   $scope.updateDelegate = function(){
       var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
-      if (fee < 0) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a positive number");
-      if (fee != parseFloat(fee)) return SweetAlert.swal("Uh-oh!", "Invalid amount entered - please enter a valid number");
+      if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'));
+      if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'));
       var delegate;
       if ($scope.delegateType == "undelegated") delegate = "";
       else {
         if ($scope.delegateType) $scope.dd = $scope.delegateType;
-        if (!$scope.dd) return SweetAlert.swal("Uh-oh!", "Please enter or a valid delegate");
+        if (!$scope.dd) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_delegate'));
         delegate = $scope.dd;
       }
       window.showLoader();
@@ -558,15 +590,15 @@ app
           pkh : $scope.accounts[$scope.account].address,
         };
       }
-      var op = window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, delegate, 0)
+      var op = window.eztz.rpc.setDelegate($scope.accounts[$scope.account].address, keys, delegate, fee)
       if (!keys.sk){
         switch($scope.type){
           case "ledger":
             var cancelled = false;
             op = op.then(function(r){
               SweetAlert.swal({
-                title: "Ledger",
-                text: "Please confirm the transaction on your Ledger Nano S Device",
+                title: Lang.translate('ledger'),
+                text: Lang.translate('ledger_confirm_transaction'),
                 type : "warning",
                 showCancelButton: true,
                 showConfirmButton: false,
@@ -583,21 +615,21 @@ app
           case "offline":
           default:
             window.hideLoader();
-            SweetAlert.swal("Uh-oh!", "You seem to be using a signing method that has not been developed yet!")
+            SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
             return;
           break;
         }
       }
       op.then(function(r){
         $scope.$apply(function(){
-          SweetAlert.swal("Awesome!", "Delegation operation was successful - this may take a few minutes to update", "success");
+          SweetAlert.swal(Lang.translate('awesome'), Lang.translate('delegation_success'), "success");
           $scope.fee = 0;
           window.hideLoader();
         });
       }).catch(function(r){
         $scope.$apply(function(){
           console.log(r);
-          SweetAlert.swal("Uh-oh!", "Delegation Failed");
+          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('delegation_failed'));
           window.hideLoader();
         });
       });
@@ -609,11 +641,11 @@ app
       window.hideLoader();
       if (r.status == 200 && r.data.length > 0){
         SweetAlert.swal({
-          title: "Import KT addresses",
-          text: "We have found "+r.data.length+" KT1 address(es) linked to your public key - would you like to import them now? (You can also manually import these by going to Options > Import)",
+          title: Lang.translate('import_kt_address'),
+          text: Lang.translate('import_kt_address_info', [r.data.length]),
           type : "info",
           showCancelButton: true,
-          confirmButtonText: "Yes, import them!",
+          confirmButtonText: Lang.translate('yes_import_them'),
           closeOnConfirm: true
         },
         function(isConfirm){
@@ -636,7 +668,7 @@ app
       }
     });
     
-    if (Storage.ico) SweetAlert.swal("Awesome", "You have successfully restored your ICO wallet. If you have just activated your account, please note that this may take some time to show.");
+    if (Storage.ico) SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ico_restore_success'));
     Storage.restored = false;
     Storage.ico = false;
   } else {
@@ -646,45 +678,41 @@ app
   refreshAll();
   var ct = setInterval(refreshAll, 20000);
 }])
-.controller('SettingController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
+.controller('SettingController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (!ss || !ss.ensk ||  typeof Storage.keys.sk == 'undefined'){
      $location.path('/new');
   }
   $scope.setting = Storage.loadSetting();
-  $scope.privateKey = '';
-  $scope.password = '';
+  
   $scope.save = function(){
     Storage.setSetting($scope.setting);
     window.eztz.node.setProvider($scope.setting.rpc);
     $location.path('/main');
   }
-  $scope.show = function(){
-    if (!$scope.password) return SweetAlert.swal("Uh-oh!", "Please enter your password");
-    if ($scope.password == Storage.password) {
-      $scope.privateKey = Storage.keys.sk;
-    } else { 
-      SweetAlert.swal("Uh-oh!", "Incorrect password");
-    }
-  }
+  
 }])
-.controller('UnlockController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
+.controller('UnlockController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (!ss || !ss.ensk){
     $location.path('/new');
   } else if (ss && ss.ensk && typeof Storage.keys.sk != 'undefined'){
     $location.path('/main');
   }
+  
+  $scope.password = '';
+  
   $scope.clear = function(){
     SweetAlert.swal({
-      title: "Are you sure?",
-      text: "You are about to clear you TezBox - note, unless you've backed up your seed words or private key you'll no longer have access to your accounts",
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('clear_tezbox_warning'),
       type : "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, clear it!",
+      confirmButtonText: Lang.translate('yes_clear_it'),
       closeOnConfirm: true
     },
     function(isConfirm){
+      console.log(isConfirm);
       if (isConfirm){
         Storage.clearStore();
         $location.path('/new');
@@ -692,8 +720,7 @@ app
     });
   }
   $scope.unlock = function(){
-    if (!$scope.password) return SweetAlert.swal("Uh-oh!", "Please enter your password");
-    if ($scope.password.length < 8) return SweetAlert.swal("Uh-oh!", "Your password is too short");
+    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'));
     window.showLoader();
     setTimeout(function(){
       $scope.$apply(function(){
@@ -711,7 +738,7 @@ app
           }
         } catch(err){
           window.hideLoader();
-          SweetAlert.swal("Uh-oh!", "Incorrect password");
+          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'));
           return;
         }
         Storage.keys = c;
@@ -721,32 +748,30 @@ app
     }, 100);
   };
 }])
-.controller('EncryptController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
+.controller('EncryptController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   var ss = Storage.loadStore();
   if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
     $location.path('/main');
   }  else if (ss && ss.ensk){
     $location.path('/unlock');
   }
-  $scope.cancel = function(){
-    Storage.clearStore();
-    $location.path('/new');
-  };
+  
   $scope.password = '';
   $scope.password2 = '';
+  
   $scope.encrypt = function(){
-    if (!$scope.password || !$scope.password2) return SweetAlert.swal("Uh-oh!", "Please enter your password");
-    if ($scope.password.length < 8) return SweetAlert.swal("Uh-oh!", "Your password is too short");
-    if ($scope.password != $scope.password2) return SweetAlert.swal("Uh-oh!", "Passwords do not match");
+    if (!$scope.password || !$scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_password'));
+    if ($scope.password.length < 8) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_short'));
+    if ($scope.password != $scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_dont_match'));
     var spaces = $scope.password.match(/\s+/g),
     numbers = $scope.password.match(/\d+/g),
     uppers  = $scope.password.match(/[A-Z]/),
     lowers  = $scope.password.match(/[a-z]/),
     special = $scope.password.match(/[!@#$%\^&*\+]/);
 
-    if (spaces !== null) return SweetAlert.swal("Uh-oh!", "Your password can't include any spaces");
-    if (uppers === null || lowers === null) return SweetAlert.swal("Uh-oh!", "Please include at least one uppercase and lowercase letter in your password");
-    if (special === null && numbers === null) return SweetAlert.swal("Uh-oh!", "Please include at least one special character (number or symbol) in your password");
+    if (spaces !== null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_spaces'));
+    if (uppers === null || lowers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_upper_lower'));
+    if (special === null && numbers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_special'));
     
     window.showLoader();
     setTimeout(function(){
@@ -763,27 +788,32 @@ app
       });
     }, 100);
   }
+  $scope.cancel = function(){
+    Storage.clearStore();
+    $location.path('/new');
+  };
+  
 }])
-.controller('LinkController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
+.controller('LinkController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   $scope.type = 'ledger'; //ledger/trezor/offline
-
   $scope.address = '';
   $scope.data = "44'/1729'/0'/0'";
+  
   $scope.cancel = function(){
       $location.path('/new');
   };
   $scope.link = function(){
 
-    if ($scope.type == 'ledger' && !$scope.data) return SweetAlert.swal("Uh-oh!", "Please enter your address path for your ledger");
-    if ($scope.type == 'trezor' && !$scope.data) return SweetAlert.swal("Uh-oh!", "Please enter your address path for your trezor");
-    if ($scope.type == 'offline' && !$scope.address) return SweetAlert.swal("Uh-oh!", "Please enter the tz address to observe");
+    if ($scope.type == 'ledger' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_ledger'));
+    if ($scope.type == 'trezor' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_trezor'));
+    if ($scope.type == 'offline' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_offline_address'));
         
-    $scope.text = "Linking...";
+    $scope.text = Lang.translate('linking');
     var cancelled = false;
     if ($scope.type == 'ledger'){
       SweetAlert.swal({
-        title: "Ledger",
-        text: "Please verify the address on your Ledger Nano S Device",
+        title: Lang.translate('ledger'),
+        text: Lang.translate('ledger_verify_address'),
         type : "warning",
         showCancelButton: true,
         showConfirmButton: false,
@@ -802,7 +832,7 @@ app
     pp.then(function(pk){
       $scope.$apply(function(){
         address = window.eztz.utility.b58cencode(window.eztz.library.sodium.crypto_generichash(20, window.eztz.utility.b58cdecode(pk, window.eztz.prefix.edpk)), window.eztz.prefix.tz1)
-        SweetAlert.swal("Awesome!", "We have retreived the following address from your ledger device: "+address+"!", "success");
+        SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ledger_retreived_address') + ": "+address+"!", "success");
         var identity = {
             pkh : address,
             accounts : [{title: "Main", address :address, public_key : pk}],
@@ -821,13 +851,12 @@ app
     }).catch(function(e){
       if (cancelled) return;
       window.hideLoader();
-      SweetAlert.swal("Uh-oh!", "There was an issue connecting to your Ledger Nano S. Please ensure your device is connected, and the Tezos Wallet app is selected.");
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_connect'));
     });    
   };
 }])
-.controller('RestoreController', ['$scope', '$location', 'Storage', 'SweetAlert', function($scope, $location, Storage, SweetAlert) {
+.controller('RestoreController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   $scope.type = 'ico';
-
   $scope.seed = '';
   $scope.passphrase = '';
   $scope.private_key = '';
@@ -835,6 +864,7 @@ app
   $scope.email = '';
   $scope.ico_password = '';
   $scope.activation_code = '';
+  
   $scope.cancel = function(){
       $location.path('/new');
   };
@@ -854,7 +884,7 @@ app
         $scope.$apply(function(){
           window.hideLoader();    
           Storage.setStore(identity, keys);          
-          SweetAlert.swal("Awesome!", "Activation was successful - please keep in mind that it may take a few minutes for your balance to show", "success");
+          SweetAlert.swal(Lang.translate('awesome'), Lang.translate('activation_successful'), "success");
           Storage.ico = true;
           Storage.restored = true;
           $location.path("/encrypt");
@@ -862,7 +892,7 @@ app
       }).catch(function(e){
         $scope.$apply(function(){
           window.hideLoader();    
-          return SweetAlert.swal("Uh-oh!", "Activation was unsuccessful - please ensure the code is right, or leave it blank if you have already activated your account");
+          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('activation_unsuccessful'));
         });
       });
     } else {
@@ -872,20 +902,20 @@ app
     }
   }
   $scope.restore = function(){
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal("Uh-oh!", "Please enter your seed words");
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal("Uh-oh!", "Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break. All words must be seperated by a space.");
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_please_enter_your_seed_words'));
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_seed_words_not_valid'));
 
-    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal("Uh-oh!", "Please enter your passphrase");
-    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal("Uh-oh!", "Please enter your email from the ICO PDF");
-    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal("Uh-oh!", "Please enter your address/Public Key Hash from the ICO PDF");
-    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal("Uh-oh!", "Please enter your private key");
-    if ($scope.type == 'private' && $scope.isEdesk() && !$scope.encryption_password) return SweetAlert.swal("Uh-oh!", "Please enter the encryption password for your edesk private key");
-    $scope.text = "Restoring...";
+    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_passphrase'));
+    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_email'));
+    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_address'));
+    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_private_key'));
+    if ($scope.type == 'private' && $scope.isEdesk() && !$scope.encryption_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_encryption_password'));
+    $scope.text = Lang.translate('restoring');
     if ($scope.type == 'seed'){
       var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.passphrase);          
     } else if ($scope.type == 'ico'){
       var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.email + $scope.ico_password);       
-      if ($scope.address != keys.pkh) return SweetAlert.swal("Uh-oh!", "Your fundraiser details don't seem to match - please try again and ensure you are entering your details in correctly. The most common issue is an incorrect password.");
+      if ($scope.address != keys.pkh) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_fundraiser_details_dont_mach'));
     } else if ($scope.type == 'private'){
       if ($scope.isEdesk()){
         return window.eztz.crypto.extractEncryptedKeys($scope.private_key, $scope.encryption_password).then(function(k){
@@ -894,7 +924,7 @@ app
             restoreEnd(k);
           });
         }).catch(function(e){
-          return SweetAlert.swal("Uh-oh!", "There was an issue trying to import your encrypted key, please try again.");
+          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_import_encrypted'));
         });
       } else {        
         var keys = window.eztz.crypto.extractKeys($scope.private_key);          

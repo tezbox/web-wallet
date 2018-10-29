@@ -217,7 +217,7 @@ app.service('Lang', ["$sce", function($sce) {
       if (typeof rep != 'undefined' && typeof _translations[_lang][id] != 'undefined'){
         var tt = _translations[_lang][id];
         for(var i = 0; i < rep.length; i++){
-          tt.replace("$$", rep[i]);
+          tt = tt.replace("$$", rep[i]);
         }
         return tt;
       } else return (typeof _translations[_lang][id] != 'undefined' ? _translations[_lang][id] : _lang + "." + id);

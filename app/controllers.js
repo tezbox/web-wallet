@@ -1,39 +1,52 @@
 app
-.controller('NewController', ['$scope', '$location', 'Storage', 'Lang', function($scope, $location, Storage, Lang) {
-  $scope.setting = Storage.loadSetting();
-  
-  if (!$scope.setting) {
-    $scope.setting = {
-      rpc : "https://rpc.tezrpc.me",
-      language : "english",
-      disclaimer : false
-    };
-    Storage.setSetting($scope.setting);
-  } else {
-    //Patch settings
-    var change = false;
-    if (typeof $scope.setting.language == 'undefined'){
-      $scope.setting.language = "english";
-      change = true;
-    }
-    Storage.setSetting($scope.setting);
-  }
-  
-  //Set provider and language - TODO: Move to settings
-  window.eztz.node.setProvider($scope.setting.rpc);
-  Lang.setLang($scope.setting.language);
-  
-  var routeUser = function(){
-    var ss = Storage.loadStore();
-    if (ss && typeof Storage.keys.sk != 'undefined'){
+.controller('LoadController', ['$scope', '$location', 'Storage',  function($scope, $location, Storage,) {
+  Storage.load().then(function(){
+    $scope.$apply(function(){
+      if (Storage.data.ensk && typeof Storage.keys.sk != 'undefined'){
         $location.path('/main');
-    }  else if (ss && ss.ensk){
+      }  else if (Storage.data.ensk){
+        $location.path('/unlock');
+      } else {
+        $location.path('/new');
+      }
+    });
+  });
+}])
+.controller('NewController', ['$scope', '$location', 'Storage', 'Lang', function($scope, $location, Storage, Lang) {
+  var routeUser = function(){
+    if (Storage.loaded && typeof Storage.keys.sk != 'undefined'){
+        $location.path('/main');
+    } else if (Storage.loaded && Storage.data.ensk){
         $location.path('/unlock');
     }
   };
-  if ($scope.setting.disclaimer) {
-    routeUser();
-  }
+  
+  Storage.load().then(function(){
+    $scope.$apply(function(){
+      $scope.setting = Storage.settings;
+      if (!$scope.setting) {
+        $scope.setting = {
+          rpc : "https://rpc.tezrpc.me",
+          language : "english",
+          disclaimer : false
+        };
+        Storage.setSetting($scope.setting);
+      } else {
+        //Patch settings
+        var change = false;
+        if (typeof $scope.setting.language == 'undefined'){
+          $scope.setting.language = "english";
+          change = true;
+        }
+        Storage.setSetting($scope.setting);
+      }
+      window.eztz.node.setProvider($scope.setting.rpc);
+      Lang.setLang($scope.setting.language);
+      if ($scope.setting.disclaimer) {
+        routeUser();
+      }
+    });
+  });
   
   $scope.acceptDisclaimer = function(){
     $scope.setting.disclaimer = true;
@@ -55,6 +68,7 @@ app
   };
 }])
 .controller('CreateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
+  Storage.load();
   $scope.passphrase = '';
   $scope.mnemonic = '';
   
@@ -83,10 +97,10 @@ app
   $scope.newMnemonic();
 }])
 .controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 'SweetAlert', 'Lang', function($scope, $location, Storage, $sce, SweetAlert, Lang) {
-  var ss = Storage.loadStore();
-  if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
+  if (!Storage.loaded) $location.path('/create');
+  if (Storage.data.ensk && typeof Storage.keys.sk != 'undefined'){
     $location.path('/main');
-  }  else if (ss && ss.ensk){
+  }  else if (Storage.data.ensk){
     $location.path('/unlock');
   }
 
@@ -107,7 +121,8 @@ app
   };
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
-  var ss = Storage.loadStore();
+  if (!Storage.loaded) $location.path('/load');
+  var ss = Storage.data;
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
      $location.path('/new');
   }
@@ -165,11 +180,11 @@ app
   $scope.privateKey = '';
   $scope.password = '';
   $scope.showPrivatekey = function(){
-    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'));
+    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'), 'error');
     if ($scope.password == Storage.password) {
       $scope.privateKey = Storage.keys.sk;
     } else { 
-      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'));
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'), 'error');
     }
   }
   setBalance = function(r){
@@ -265,7 +280,7 @@ app
   } 
   $scope.saveTitle = function(){
     if (!$scope.tt){
-        SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_new_title'));
+        SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_new_title'), 'error');
         return;
     }
     $scope.accounts[$scope.account].title = $scope.tt;
@@ -274,14 +289,14 @@ app
     $scope.refresh();
   };   
   $scope.import = function(){
-    if (!$scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_address'));
+    if (!$scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_address'), 'error');
     for(var i = 0; i < $scope.accounts.length; i++){
-      if ($scope.accounts[i].address == $scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_linked'));
+      if ($scope.accounts[i].address == $scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_linked'), 'error');
     }
     window.showLoader();
     
     window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
-      if (r != $scope.accounts[0].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_manager'));
+      if (r != $scope.accounts[0].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_manager'), 'error');
       $scope.$apply(function(){
         $scope.accounts.push(
           {
@@ -299,7 +314,7 @@ app
       })
     }).catch(function(r){
       window.hideLoader();
-      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_importing'));
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_importing'), 'error');
     });
   };   
   $scope.remove = function(){
@@ -372,14 +387,14 @@ app
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
+                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'), 'error')
               });
             break;
             case "trezor":
             case "offline":
             default:
               window.hideLoader();
-              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'), 'error')
               return;
             break;
           }
@@ -400,7 +415,7 @@ app
               Storage.setStore(ss);
               SweetAlert.swal(Lang.translate('awesome'), Lang.translate('new_account_originated'), "success");
             } else {
-              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_origination_awaiting'));
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_origination_awaiting'), 'error');
             }
             $scope.refresh();
             window.hideLoader();
@@ -409,8 +424,8 @@ app
           window.hideLoader();
           if (typeof r.errors !== 'undefined'){
             ee = r.errors[0].id.split(".").pop();
-            SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": Error (" + ee + ")");
-          } else SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('origination_error'));
+            SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": Error (" + ee + ")", 'error');
+          } else SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('origination_error'), 'error');
         });
       }
     });
@@ -462,13 +477,13 @@ app
   };
   $scope.send = function(){
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
-    if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_destinaton'));
+    if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_destinaton'), 'error');
     if ($scope.toaddress == $scope.accounts[$scope.account].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_send_self'));
-    if ($scope.amount < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_amount'));
-    if ($scope.amount > $scope.max()) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_amount_exceeds'));
+    if ($scope.amount < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_amount'), 'error');
+    if ($scope.amount > $scope.max()) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_amount_exceeds'), 'error');
     if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'));
-    if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_amount'));
-    if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'));
+    if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_amount'), 'error');
+    if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'), 'error');
     SweetAlert.swal({
       title: Lang.translate('are_you_sure'),
       text: Lang.translate('transaction_confirm_info', [$scope.amount, $scope.toaddress]),
@@ -518,20 +533,20 @@ app
                 }).catch(function(e){
                 if (cancelled) return;
                   window.hideLoader();
-                  SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
+                  SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'), 'error')
                 });
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
                 console.log(e);
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'))
+                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'), 'error')
               });
             break;
             case "trezor":
             case "offline":
             default:
               window.hideLoader();
-              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'), 'error')
               return;
             break;
           }
@@ -548,9 +563,9 @@ app
             window.hideLoader();
             if (typeof r.errors !== 'undefined'){
               ee = r.errors[0].id.split(".").pop();
-              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")");
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")", 'error');
             } else {
-              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'));
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'), 'error');
             }
           });
         });
@@ -567,13 +582,13 @@ app
   }
   $scope.updateDelegate = function(){
       var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
-      if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'));
-      if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'));
+      if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'), 'error');
+      if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'), 'error');
       var delegate;
       if ($scope.delegateType == "undelegated") delegate = "";
       else {
         if ($scope.delegateType) $scope.dd = $scope.delegateType;
-        if (!$scope.dd) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_delegate'));
+        if (!$scope.dd) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_delegate'), 'error');
         delegate = $scope.dd;
       }
       window.showLoader();
@@ -615,7 +630,7 @@ app
           case "offline":
           default:
             window.hideLoader();
-            SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'))
+            SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_undeveloped'), 'error')
             return;
           break;
         }
@@ -629,7 +644,7 @@ app
       }).catch(function(r){
         $scope.$apply(function(){
           console.log(r);
-          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('delegation_failed'));
+          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('delegation_failed'), 'error');
           window.hideLoader();
         });
       });
@@ -668,7 +683,7 @@ app
       }
     });
     
-    if (Storage.ico) SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ico_restore_success'));
+    if (Storage.ico) SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ico_restore_success'), 'success');
     Storage.restored = false;
     Storage.ico = false;
   } else {
@@ -679,11 +694,8 @@ app
   var ct = setInterval(refreshAll, 20000);
 }])
 .controller('SettingController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
-  var ss = Storage.loadStore();
-  if (!ss || !ss.ensk ||  typeof Storage.keys.sk == 'undefined'){
-     $location.path('/new');
-  }
-  $scope.setting = Storage.loadSetting();
+  if (!Storage.loaded) $location.path('/load');
+  $scope.setting = Storage.settings;
   
   $scope.save = function(){
     Storage.setSetting($scope.setting);
@@ -693,15 +705,9 @@ app
   
 }])
 .controller('UnlockController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
-  var ss = Storage.loadStore();
-  if (!ss || !ss.ensk){
-    $location.path('/new');
-  } else if (ss && ss.ensk && typeof Storage.keys.sk != 'undefined'){
-    $location.path('/main');
-  }
-  
+  if (!Storage.loaded) $location.path('/load');
+  var ss = Storage.data;
   $scope.password = '';
-  
   $scope.clear = function(){
     SweetAlert.swal({
       title: Lang.translate('are_you_sure'),
@@ -720,7 +726,7 @@ app
     });
   }
   $scope.unlock = function(){
-    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'));
+    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'), 'error');
     window.showLoader();
     setTimeout(function(){
       $scope.$apply(function(){
@@ -738,7 +744,7 @@ app
           }
         } catch(err){
           window.hideLoader();
-          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'));
+          SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'), 'error');
           return;
         }
         Storage.keys = c;
@@ -749,29 +755,25 @@ app
   };
 }])
 .controller('EncryptController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
-  var ss = Storage.loadStore();
-  if (ss  && ss.ensk && typeof Storage.keys.sk != 'undefined'){
-    $location.path('/main');
-  }  else if (ss && ss.ensk){
-    $location.path('/unlock');
-  }
-  
+  if (!Storage.loaded) $location.path('/load');
+  var ss = Storage.data;
+  if (typeof Storage.keys.sk == 'undefined') $location.path('/new');
   $scope.password = '';
   $scope.password2 = '';
   
   $scope.encrypt = function(){
-    if (!$scope.password || !$scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_password'));
-    if ($scope.password.length < 8) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_short'));
-    if ($scope.password != $scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_dont_match'));
+    if (!$scope.password || !$scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_password'), 'error');
+    if ($scope.password.length < 8) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_short'), 'error');
+    if ($scope.password != $scope.password2) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_dont_match'), 'error');
     var spaces = $scope.password.match(/\s+/g),
     numbers = $scope.password.match(/\d+/g),
     uppers  = $scope.password.match(/[A-Z]/),
     lowers  = $scope.password.match(/[a-z]/),
     special = $scope.password.match(/[!@#$%\^&*\+]/);
 
-    if (spaces !== null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_spaces'));
-    if (uppers === null || lowers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_upper_lower'));
-    if (special === null && numbers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_special'));
+    if (spaces !== null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_spaces'), 'error');
+    if (uppers === null || lowers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_upper_lower'), 'error');
+    if (special === null && numbers === null) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_password_special'), 'error');
     
     window.showLoader();
     setTimeout(function(){
@@ -804,9 +806,9 @@ app
   };
   $scope.link = function(){
 
-    if ($scope.type == 'ledger' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_ledger'));
-    if ($scope.type == 'trezor' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_trezor'));
-    if ($scope.type == 'offline' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_offline_address'));
+    if ($scope.type == 'ledger' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_ledger'), 'error');
+    if ($scope.type == 'trezor' && !$scope.data) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_path_trezor'), 'error');
+    if ($scope.type == 'offline' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_offline_address'), 'error');
         
     $scope.text = Lang.translate('linking');
     var cancelled = false;
@@ -814,7 +816,7 @@ app
       SweetAlert.swal({
         title: Lang.translate('ledger'),
         text: Lang.translate('ledger_verify_address'),
-        type : "warning",
+        imageUrl: "skin/images/ledger-icon.png",
         showCancelButton: true,
         showConfirmButton: false,
       }, function(c){
@@ -825,7 +827,6 @@ app
       });
       window.showLoader();
       var pp = window.tezledger.getAddress($scope.data).then(function(r){
-        SweetAlert.swal
         return window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(r.publicKey.substr(2)), window.eztz.prefix.edpk)
       })
     }
@@ -851,7 +852,7 @@ app
     }).catch(function(e){
       if (cancelled) return;
       window.hideLoader();
-      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_connect'));
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_connect'), 'error');
     });    
   };
 }])
@@ -892,7 +893,7 @@ app
       }).catch(function(e){
         $scope.$apply(function(){
           window.hideLoader();    
-          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('activation_unsuccessful'));
+          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('activation_unsuccessful'), 'error');
         });
       });
     } else {
@@ -902,20 +903,20 @@ app
     }
   }
   $scope.restore = function(){
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_please_enter_your_seed_words'));
-    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_seed_words_not_valid'));
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !$scope.seed) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_please_enter_your_seed_words'), 'error');
+    if (['seed', 'ico'].indexOf($scope.type) >= 0 && !window.eztz.library.bip39.validateMnemonic($scope.seed)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_seed_words_not_valid'), 'error');
 
-    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_passphrase'));
-    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_email'));
-    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_address'));
-    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_private_key'));
-    if ($scope.type == 'private' && $scope.isEdesk() && !$scope.encryption_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_encryption_password'));
+    if ($scope.type == 'ico' && !$scope.ico_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_passphrase'), 'error');
+    if ($scope.type == 'ico' && !$scope.email) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_email'), 'error');
+    if ($scope.type == 'ico' && !$scope.address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_address'), 'error');
+    if ($scope.type == 'private' && !$scope.private_key) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_private_key'), 'error');
+    if ($scope.type == 'private' && $scope.isEdesk() && !$scope.encryption_password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_enter_encryption_password'), 'error');
     $scope.text = Lang.translate('restoring');
     if ($scope.type == 'seed'){
       var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.passphrase);          
     } else if ($scope.type == 'ico'){
       var keys = window.eztz.crypto.generateKeys($scope.seed, $scope.email + $scope.ico_password);       
-      if ($scope.address != keys.pkh) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_fundraiser_details_dont_mach'));
+      if ($scope.address != keys.pkh) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_fundraiser_details_dont_mach'), 'error');
     } else if ($scope.type == 'private'){
       if ($scope.isEdesk()){
         return window.eztz.crypto.extractEncryptedKeys($scope.private_key, $scope.encryption_password).then(function(k){
@@ -924,7 +925,7 @@ app
             restoreEnd(k);
           });
         }).catch(function(e){
-          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_import_encrypted'));
+          return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_import_encrypted'), 'error');
         });
       } else {        
         var keys = window.eztz.crypto.extractKeys($scope.private_key);          

@@ -23,12 +23,11 @@ app.service('Storage', function() {
     };
     r.loadStore = function(){
       return new Promise(function(resolve, reject){
-        if (r.loaded) resolve(r.ensk);
+        if (r.loaded) resolve(r.data.ensk);
         else {
           r.loaded = true;
-          console.log("Loaded");
           r.data = JSON.parse(localStorage.getItem('tbstore'));
-          resolve(r.ensk);
+          resolve(r.data.ensk);
         }
       });
     };

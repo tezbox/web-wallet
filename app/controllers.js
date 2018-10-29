@@ -250,7 +250,6 @@ app
     refreshTransactions();
   }
   $scope.nextAddress = function(){
-    console.log($scope.accounts.length);
     if ($scope.accounts.length === 1) return $scope.accounts[0].address;
     else return ($scope.account === 0 ? $scope.accounts[1].address : $scope.accounts[0].address);
   }
@@ -371,7 +370,6 @@ app
             case "ledger":
               var cancelled = false;
               op = op.then(function(r){
-                console.log($scope.type);
                 SweetAlert.swal({
                   title: Lang.translate('ledger'),
                   text: Lang.translate('ledger_confirm_transaction'),
@@ -539,7 +537,6 @@ app
               }).catch(function(e){
                 if (cancelled) return;
                 window.hideLoader();
-                console.log(e);
                 SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('ledger_error_signing'), 'error')
               });
             break;
@@ -644,7 +641,6 @@ app
         });
       }).catch(function(r){
         $scope.$apply(function(){
-          console.log(r);
           SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('delegation_failed'), 'error');
           window.hideLoader();
         });
@@ -719,7 +715,6 @@ app
       closeOnConfirm: true
     },
     function(isConfirm){
-      console.log(isConfirm);
       if (isConfirm){
         Storage.clearStore();
         $location.path('/new');
@@ -922,7 +917,6 @@ app
       if ($scope.isEdesk()){
         return window.eztz.crypto.extractEncryptedKeys($scope.private_key, $scope.encryption_password).then(function(k){
           $scope.$apply(function(){
-            console.log(k);
             restoreEnd(k);
           });
         }).catch(function(e){

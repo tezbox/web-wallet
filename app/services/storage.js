@@ -18,6 +18,7 @@ app.service('Storage', function() {
       });
     }
     r.setStore = function(v, k, p){
+        r.data = v;
         localStorage.setItem('tbstore', JSON.stringify(v));
         if (typeof k != 'undefined') r.keys = k;
     };
@@ -26,13 +27,19 @@ app.service('Storage', function() {
         if (r.loaded) resolve(r.data.ensk);
         else {
           r.loaded = true;
-          r.data = JSON.parse(localStorage.getItem('tbstore'));
-          resolve(r.data.ensk);
+          var dd = JSON.parse(localStorage.getItem('tbstore'));
+          if (dd){
+            r.data =             
+            resolve(r.data.ensk);
+          } else {
+            resolve(false);
+          }
         }
       });
     };
     r.clearStore = function(){
       r.keys = {};
+      r.data = false;
       var s = r.loadSetting();
       localStorage.clear();
       r.setSetting(s);

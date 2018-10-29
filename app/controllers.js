@@ -98,6 +98,7 @@ app
 }])
 .controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 'SweetAlert', 'Lang', function($scope, $location, Storage, $sce, SweetAlert, Lang) {
   if (!Storage.loaded) $location.path('/create');
+  var ss = Storage.data;
   if (Storage.data.ensk && typeof Storage.keys.sk != 'undefined'){
     $location.path('/main');
   }  else if (Storage.data.ensk){

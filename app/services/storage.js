@@ -29,7 +29,7 @@ app.service('Storage', function() {
           r.loaded = true;
           var dd = JSON.parse(localStorage.getItem('tbstore'));
           if (dd){
-            r.data =             
+            r.data = dd;            
             resolve(r.data.ensk);
           } else {
             resolve(false);

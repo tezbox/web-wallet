@@ -47,10 +47,6 @@ var app = angular.module('popup', [
     templateUrl : "app/views/setting.html",
     controller : "SettingController",
   })
-  .when("/load", {
-    templateUrl : "app/views/load.html",
-    controller : "LoadController",
-  })
   .otherwise({
     redirectTo: '/new'
   });

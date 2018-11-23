@@ -3,14 +3,18 @@ function initTezTrezor(){
 
   function openDevice(){
     return new Promise(async function(resolve, reject){
-      const VENDOR_ID = 4617
-      const DEVICE_ID = 21441
-    
+      var VENDOR_ID = 4617;
+      var DEVICE_ID = 21441;
+      var VENDOR_ID2 = 21324;
+      var DEVICE_ID2 = 1;
       try {
         device = await navigator.usb.requestDevice({
           filters: [{
             vendorId: VENDOR_ID,
             deviceId: DEVICE_ID,
+          },{
+            vendorId: VENDOR_ID2,
+            deviceId: DEVICE_ID2,
           }]
         })
         await device.open()
@@ -77,6 +81,15 @@ function initTezTrezor(){
   }
 
   tezFns = {
+    getFeatures : function(){
+      return new Promise(function(resolve, reject){
+        openDevice().then(function(){
+          load().then(function(){
+            return trezorQuery("getFeatures");
+          }).catch(reject);
+        }).catch(reject);
+      });
+    },
     sign : function(path, branch, operation, revealOp){
       return new Promise(function(resolve, reject){
         openDevice().then(function(){
@@ -131,8 +144,12 @@ function initTezTrezor(){
     "acknowledge" : 27,
     "acknowledgePassphrase" : 42,
     "acknowledgePassphraseState" : 78,
+    "getFeatures" : 55,
   };
   var msgidToPb = {
+    55 : "hw.trezor.messages.management.GetFeatures",
+    17 : "hw.trezor.messages.management.Features",
+    
     2 : "hw.trezor.messages.common.Success",
     3 : "hw.trezor.messages.common.Failure",
     26 : "hw.trezor.messages.common.ButtonRequest",
@@ -182,7 +199,9 @@ function initTezTrezor(){
   }
   function decodeProtobugMessage(messageId, message){
     var pbm = pbroot.lookupType(msgidToPb[messageId]);
-    return pbm.toObject(pbm.decode(message));
+    var res = pbm.toObject(pbm.decode(message));
+    console.log(res);
+    return res;
   }
   function buf2int(b){
     var count = 0;
@@ -204,6 +223,7 @@ function initTezTrezor(){
   function trezorQuery(id, data){
     return new Promise(async function(resolve, reject){
       var packets = buildPackets(trezToMsgid[id], data || false);
+      console.log(packets);
       for(var i = 0; i < packets.length; i++){
         await device.transferOut(outep, new Uint8Array([63].concat(packets[i])));
       }
@@ -248,6 +268,7 @@ function initTezTrezor(){
               trezorQuery("acknowledgePassphraseState").then(resolve).catch(reject);
             } else {
               currentMessageData = currentMessageData.slice(0, currentMessageLength);
+              console.log(currentMessageData);
               resolve(decodeProtobugMessage(currentMessageId, new Uint8Array(currentMessageData)));
             }
             clearTimeout(timeoutID);

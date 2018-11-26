@@ -12,7 +12,7 @@ app
   $scope.setting = Storage.settings;
   if (!$scope.setting) {
     $scope.setting = {
-      rpc : "https://rpc.tezrpc.me",
+      rpc : "https://mainnet.tezrpc.me",
       language : "english",
       disclaimer : false
     };
@@ -104,9 +104,10 @@ app
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.data, protos = {
-    "PtCJ7pwoxe8JasnHY8YonnLYjcVHmhiARPJvqcC6VfHT5s8k8sY" : "Betanet_v1",
-    "ProtoALphaALphaALphaALphaALphaALphaALphaALphaDdp3zK" : "Zeronet",
-    "PsYLVpVvgbLhAhoqAkMFUo6gudkJ9weNXhUYCiLDzcUpFpkk8Wt" : "Mainnet"
+    "PtCJ7pwo" : "Betanet_v1",
+    "ProtoALp" : "Zeronet",
+    "PsYLVpVv" : "Mainnet",
+    "PsddFKi3" : "Mainnet_003"
   }
   
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
@@ -123,11 +124,11 @@ app
   $scope.tt = $scope.accounts[$scope.account].title;
   $scope.transactions = [];
   $scope.amount = 0;
-  $scope.fee = 0;
-  $scope.customFee = 0;
+  $scope.fee = 1420;
+  $scope.customFee = 1420;
   $scope.advancedOptions = false;
-  $scope.gas_limit = 200;
-  $scope.storage_limit = 0;
+  $scope.gas_limit = 10300;
+  $scope.storage_limit = 300;
   $scope.parameters = '';
   $scope.delegateType = 'undelegated';
   $scope.advancedOptions = false;
@@ -204,8 +205,9 @@ app
         $scope.block = {
           net : r.chain_id,
           level : r.header.level,
-          proto : Lang.translate("connected_to") + " " + (typeof protos[r.protocol] != 'undefined' ? protos[r.protocol] : r.protocol.substring(0,7) + "..."),
+          proto : Lang.translate("connected_to") + " " + (typeof protos[r.protocol.substr(0,8)] != 'undefined' ? protos[r.protocol.substr(0,8)] : r.protocol.substring(0,8)),
         };
+				if (r.protocol.substr(0,8) == "ProtoALp") window.eztz.node.setProvider(window.eztz.node.activeProvider, true);
       });
     }).catch(function(e){
       $scope.$apply(function(){
@@ -443,8 +445,8 @@ app
   };
   $scope.clear = function(){
     $scope.amount = 0;
-    $scope.customFee = 0;
-    $scope.fee = 0;
+    $scope.customFee = 1420;
+    $scope.fee = 1420;
     $scope.toaddress = '';
     $scope.parameters = '';
     $scope.showAccounts = false;
@@ -502,7 +504,10 @@ app
           $scope.$apply(function(){
             if (!cancelled){
               window.hideLoader();
-              if (typeof r.name != 'undefined'){
+							if (window.isJsonString(r)){
+								r = JSON.parse(r);
+                SweetAlert.swal(Lang.translate('uh_oh'), r[0].error, 'error');
+							} else if (typeof r.name != 'undefined'){
                 SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Hardware device error", 'error');
               } else if (r == "TREZOR_ERROR") {
                 SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Trezor device error", 'error');
@@ -549,7 +554,7 @@ app
           window.hideLoader();
           if (!cancelled){
             SweetAlert.swal(Lang.translate('awesome'), Lang.translate('delegation_success'), "success");
-            $scope.fee = 0;
+            $scope.fee = 1420;
           }
         });
       }).catch(function(r){
@@ -585,7 +590,7 @@ app
           pkh : $scope.accounts[$scope.account].address,
         };
         if ($scope.type != "encrypted") keys.sk = false;
-        var op = window.eztz.rpc.account(keys, 0, true, true, null, 0)
+        var op = window.eztz.rpc.account(keys, 0, true, true, false, (window.eztz.node.isZeronet ? 100000 : 1400))
         
         var cancelled = false;
         if ($scope.type != "encrypted"){

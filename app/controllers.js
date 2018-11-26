@@ -115,6 +115,7 @@ app
   }
   if (typeof ss.temp != 'undefined') delete ss.temp;
   
+	$scope.isRevealed = false;
   $scope.type = Storage.keys.type;
   $scope.setting = Storage.loadSetting();
   $scope.accounts = ss.accounts;
@@ -228,6 +229,11 @@ app
 		refreshBalance();
   }
   var refreshBalance = function(){
+		if (!$scope.isRevealed){
+			window.eztz.node.query('/chains/main/blocks/head/context/contracts/' + $scope.accounts[0].address + '/manager_key').then(function(r){
+				if (r.key == Storage.keys.pk) $scope.isRevealed = true;
+			});
+		}
 		window.eztz.rpc.getBalance($scope.accounts[$scope.account].address).then(function(r){
       $scope.$apply(function(){
         $scope.accountLive = true;
@@ -590,7 +596,7 @@ app
         var keys = {
           sk : Storage.keys.sk,
           pk : Storage.keys.pk,
-          pkh : $scope.accounts[$scope.account].address,
+          pkh : $scope.accounts[0].address,
         };
         if ($scope.type != "encrypted") keys.sk = false;
         var op = window.eztz.rpc.account(keys, 0, true, true, false, (window.eztz.node.isZeronet ? 100000 : 1400))

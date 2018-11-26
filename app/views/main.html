@@ -103,6 +103,11 @@
                 </div>
               </div>
               <div role="tabpanel" class="tab-pane" id="send">
+								<div class="row">
+                  <div class="col-md-12" ng-show="account == 0 && !isRevealed">
+                    <p class="alert alert-info"><i class="leftIcon fas fa-exclamation-circle"></i><strong>{{translate("first_operation")}}</strong></p>
+                  </div>
+                </div>
                 <div class="row">
                   <div class="col-lg-8 col-md-12">
                     <div class="form-group">

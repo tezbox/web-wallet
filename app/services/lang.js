@@ -9,6 +9,7 @@ app.service('Lang', ["$sce", function($sce) {
     ],
     _translations = {
       "english" : {
+        "first_operation" : "This account hasn't been revealed yet, which means your next operation will incur an additional fee of 0.001150ꜩ.",
         "error_please_enter_your_seed_words" : "Please enter your seed words",
         "error_seed_words_not_valid" : "Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break. All words must be seperated by a space.",
         "error_enter_passphrase" : "Please enter your passphrase",
@@ -193,7 +194,7 @@ app.service('Lang', ["$sce", function($sce) {
         "not_connected" : "Not Connected",        
         "remove_account_warning" : "You are about to remove this account from your wallet! (You can always restore this account in future by going to Options > Import)",
         "yes_remove_it" : "Yes, remove it!",
-        "originate_warning" : "Creating a new account incurs an origination fee of ~0.257 XTZ. Do you want to continue?)",
+        "originate_warning" : "Creating a new account incurs a fee of ~0.260ꜩ. Do you want to continue?)",
         "yes_continue" : "Yes, continue!",
         "new_account_originated" : "Your new account has been originated - this may take a few minutes to be included on the blockchain",
         "origination_error" : "There was an error adding account. Please ensure your main account has funds available",

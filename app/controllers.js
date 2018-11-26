@@ -482,6 +482,7 @@ app
 						});
 					} else {
 						resolve();
+					}
 				}).catch(function(e){
 					resolve();
 					window.hideLoader();

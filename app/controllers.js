@@ -460,6 +460,37 @@ app
     $scope.showAccounts = false;
   }
   
+	
+	function checkAddress(a){
+		return new Promise(function(resolve, reject){
+			if (a.substr(0,2) == "tz") {
+				window.showLoader();
+				window.eztz.rpc.getBalance(a).then(function(b){
+					window.hideLoader();
+					if (b == 0){
+						SweetAlert.swal({
+							title: Lang.translate('extra_fee'),
+							text: Lang.translate('transaction_confirm_lowtz'),
+							showCancelButton: true,
+							confirmButtonText: Lang.translate('confirm'),
+							closeOnConfirm: true
+						},
+						function(isConfirm){
+							if (isConfirm){
+								resolve();
+							}
+						});
+					} else {
+						resolve();
+				}).catch(function(e){
+					resolve();
+					window.hideLoader();
+				});
+			} else {
+				resolve();
+			}
+		});
+	}
   //on-chain functions
   $scope.send = function(){
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
@@ -471,66 +502,69 @@ app
     if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_amount'), 'error');
     if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'), 'error');
     
-    SweetAlert.swal({
-      title: Lang.translate('are_you_sure'),
-      text: Lang.translate('transaction_confirm_info', [$scope.amount, $scope.toaddress]),
-      type : "warning",
-      showCancelButton: true,
-      confirmButtonText: Lang.translate('yes_send_it'),
-      closeOnConfirm: true
-    },
-    function(isConfirm){
-      if (isConfirm){
-        window.showLoader();
-        var keys = {
-          sk : Storage.keys.sk,
-          pk : Storage.keys.pk,
-          pkh : $scope.accounts[$scope.account].address,
-        };
-        if ($scope.type != "encrypted") keys.sk = false;
-        if ($scope.parameters){
-          var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
-        } else {
-          var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit);
-        }
-        
-        var cancelled = false;
-        if ($scope.type != "encrypted"){
-          op = remoteSign($scope.type, op);
-        }
-        
-        op.then(function(r){
-          $scope.$apply(function(){
-            window.hideLoader();
-            if (!cancelled){
-              SweetAlert.swal(Lang.translate('awesome'), Lang.translate('transaction_sent'), "success");
-              refreshTransactions();
-              $scope.clear();
-            }
-          });
-        }).catch(function(r){
-          $scope.$apply(function(){
-            if (!cancelled){
-              window.hideLoader();
-							if (window.isJsonString(r)){
-								r = JSON.parse(r);
-                SweetAlert.swal(Lang.translate('uh_oh'), r[0].error, 'error');
-							} else if (typeof r.name != 'undefined'){
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Hardware device error", 'error');
-              } else if (r == "TREZOR_ERROR") {
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Trezor device error", 'error');
-              } else if (typeof r.errors != 'undefined'){
-                ee = r.errors[0].id.split(".").pop();
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")", 'error');
-              } else {
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'), 'error');
-              }
-            }
-          });
-        });
-      }
-    });
-  };
+		var check = checkAddress($scope.toaddress);
+		check.then(function(){
+			SweetAlert.swal({
+				title: Lang.translate('are_you_sure'),
+				text: Lang.translate('transaction_confirm_info', [$scope.amount, $scope.toaddress]),
+				type : "warning",
+				showCancelButton: true,
+				confirmButtonText: Lang.translate('yes_send_it'),
+				closeOnConfirm: true
+			},
+			function(isConfirm){
+				if (isConfirm){
+					window.showLoader();
+					var keys = {
+						sk : Storage.keys.sk,
+						pk : Storage.keys.pk,
+						pkh : $scope.accounts[$scope.account].address,
+					};
+					if ($scope.type != "encrypted") keys.sk = false;
+					if ($scope.parameters){
+						var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
+					} else {
+						var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit);
+					}
+					
+					var cancelled = false;
+					if ($scope.type != "encrypted"){
+						op = remoteSign($scope.type, op);
+					}
+					
+					op.then(function(r){
+						$scope.$apply(function(){
+							window.hideLoader();
+							if (!cancelled){
+								SweetAlert.swal(Lang.translate('awesome'), Lang.translate('transaction_sent'), "success");
+								refreshTransactions();
+								$scope.clear();
+							}
+						});
+					}).catch(function(r){
+						$scope.$apply(function(){
+							if (!cancelled){
+								window.hideLoader();
+								if (window.isJsonString(r)){
+									r = JSON.parse(r);
+									SweetAlert.swal(Lang.translate('uh_oh'), r[0].error, 'error');
+								} else if (typeof r.name != 'undefined'){
+									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Hardware device error", 'error');
+								} else if (r == "TREZOR_ERROR") {
+									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Trezor device error", 'error');
+								} else if (typeof r.errors != 'undefined'){
+									ee = r.errors[0].id.split(".").pop();
+									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")", 'error');
+								} else {
+									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'), 'error');
+								}
+							}
+						});
+					});
+				}
+			});
+		});
+	};
   $scope.updateDelegate = function(){
       var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
       if (fee < 0) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_positive_fee'), 'error');

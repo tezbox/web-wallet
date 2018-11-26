@@ -335,7 +335,6 @@ app
   $scope.max = function(){
     var max = $scope.accountDetails.raw_balance;
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
-    if ($scope.account === 0) max -= 1;
     return Math.max($scope.toTez(max - fee), 0);
   }
   $scope.toDate = function(d){

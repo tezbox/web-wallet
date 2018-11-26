@@ -146,17 +146,29 @@ app
   $scope.delegates = {
     keys : [
     'false',
-    'tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY',
-    'tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ',
+    'tz1QLXqnfN51dkjeghXvKHkJfhvGiM5gK4tc',
+    'tz1d6Fx42mYgVFnHUW8T8A7WBfJ6nD9pVok8',
+    'tz1cX93Q3KsiTADpCC4f12TBvAmS5tw7CW19',
+    'tz1Zhv3RkfU2pHrmaiDyxp7kFZpZrUCu1CiF',
+    'tz1ZQppA6UerMz5CJtGvZmmB6z8L9syq7ixu',
+    'tz1LmaFsWRkjr7QMCx5PtV6xTUz3AmEpKQiF',
+    'tz1Ryat7ZuRapjGUgsPym9DuMGrTYYyDBJoq',
+    'tz1iJ4qgGTzyhaYEzd1RnC6duEkLBd1nzexh',
+    'tz1Scdr2HsZiQjc7bHMeBbmDRXYVvdhjJbBh',
     'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
-    'tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5',
     ],
     names : [
       'Undelegated',
-      'Tezzigator',
-      'Tezos.Community',
+      'Fresh Tezos',
+      'My Tezos Baking',
+      'Tz Bakery',
+      'TZ Bake',
+      'First Block',
+      'Blockpower',
+      'Illuminarean',
+      'Tz Envoy',
+      'Figment',
       'HappyTezos',
-      'CryptoDelegate',
     ]
   };
   $scope.privateKey = '';

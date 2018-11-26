@@ -160,7 +160,10 @@ app
   };
   $scope.privateKey = '';
   $scope.password = '';
-  
+  $scope.getBlocky = function(a){
+		return "0" + window.eztz.utility.b582int(a);
+	}
+	
   var setBalance = function(r){
     var rb = parseInt(r);
     var bal = $scope.toTez(rb); 

@@ -87,6 +87,8 @@ function initTezTrezor(){
             };
             if (revealOp ) tx.reveal = revealOp;
             var type = operation.type;
+            //hot fix for issue with params
+            if (type == "transaction") delete operation.parameters;
             delete operation.type;
             tx[type] = operation;
             trezorQuery('tezosSignTx', tx).then(function(d){

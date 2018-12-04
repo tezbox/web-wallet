@@ -188,7 +188,7 @@ app
   }
   var refreshTransactions = function(){
     var maxTxs = 20;
-    $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
+    $http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
       if (r.status == 200 && r.data.length > 0){
         if (r.data.length > maxTxs) {
           r.data.splice(0,1);
@@ -687,7 +687,7 @@ app
   //init
   if (Storage.restored){
     window.showLoader();
-    $http.get("https://api4.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
+    $http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
       window.hideLoader();
       if (r.status == 200 && r.data.length > 0){
         SweetAlert.swal({
@@ -716,7 +716,9 @@ app
           }
         });
       }
-    });
+    }).catch(function(e){
+			window.hideLoader();
+		});
     
     if (Storage.ico) SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ico_restore_success'), 'success');
     Storage.restored = false;

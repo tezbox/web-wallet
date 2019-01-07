@@ -12,7 +12,7 @@ app
   $scope.setting = Storage.settings;
   if (!$scope.setting) {
     $scope.setting = {
-      rpc : "https://mainnet.tezrpc.me",
+      rpc : "https://alphanet.tezrpc.me",
       language : "english",
       disclaimer : false
     };

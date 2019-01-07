@@ -85,7 +85,7 @@ app.service('Lang', ["$sce", function($sce) {
         "trezor" : "Trezor",
         "offline_signer" : "Offline Signer",
         "trezor_coming_soon" : "Trezor support coming soon...",
-        "warning" : "Be warned that you are dealing with the mainnet, which is a LIVE NETWORK. All transactions on this network are final.",
+        "warning" : "Be warned that you are dealing with the alphanet, which is a TEST NETWORK. All transactions on this network are for fake tez.",
         "create_info" : "Please write your seed words below and store them in a secure place. These can be used to restore your wallet. If you choose to use a Passphrase, this will need to be noted down and stored as well",
         "validate_info" : "Please re-enter your seed words and passphrase in full from the previous step. This is to confirm that you have correctly recorded these down.",
         "secure_your_tezbox_info" : "Please enter a password to encrypt your private data. This password is only used to unlock your wallet (not required to restore it).",

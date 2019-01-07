@@ -107,7 +107,7 @@ app
     "PtCJ7pwo" : "Betanet_v1",
     "ProtoALp" : "Zeronet",
     "PsYLVpVv" : "Mainnet",
-    "PsddFKi3" : "Mainnet_003"
+    "PsddFKi3" : "ALPHANET"
   }
   
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){

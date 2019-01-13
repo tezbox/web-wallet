@@ -191,13 +191,13 @@ app
     $http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
       if (r.status == 200 && r.data.length > 0){
         if (r.data.length > maxTxs) {
-          r.data.splice(0,1);
+          r.data = r.data.slice(0, maxTxs);
           $scope.moreTxs = true;
         } else {
           $scope.moreTxs = false;
         }
         var txs = [];
-        for(var i = r.data.length-1; i >= 0; i--){
+        for(var i = 0; i < r.data.length; i++){
           for(var j = 0; j < r.data[i].type.operations.length; j++){
             if (r.data[i].type.operations[j].kind != 'transaction' || r.data[i].type.operations[j].failed) continue;
             txs.push({

@@ -568,6 +568,8 @@ app
 								} else if (typeof r.errors != 'undefined'){
 									ee = r.errors[0].id.split(".").pop();
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")", 'error');
+								} else if (typeof r == 'string') {
+									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " - " + r, 'error');
 								} else {
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed2'), 'error');
 								}

@@ -738,8 +738,20 @@ app
 }])
 .controller('SettingController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   $scope.setting = Storage.settings;
+	$scope.customRpc = '';
+	if (['https://mainnet.tezrpc.me','https://alphanet.tezrpc.me','https://zeronet.tezrpc.me'].indexOf($scope.setting.rpc) >= 0){
+		$scope.rpc = $scope.setting.rpc;
+		$scope.showCustom = false;		
+	} else {
+		$scope.rpc = "https://mainnet.tezrpc.me";
+		$scope.customRpc = $scope.rpc;
+		$scope.showCustom = true;		
+	}
   
   $scope.save = function(){
+		if ($scope.showCustom) $scope.setting.rpc = $scope.customRpc;
+		else $scope.setting.rpc = $scope.rpc;
+		
     Storage.setSetting($scope.setting);
     window.eztz.node.setProvider($scope.setting.rpc);
     return $location.path('/main');
@@ -766,7 +778,6 @@ app
     });
   }
   $scope.unlock = function(){
-    if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'), 'error');
     window.showLoader();
     setTimeout(function(){
       $scope.$apply(function(){

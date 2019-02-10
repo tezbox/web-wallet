@@ -566,7 +566,7 @@ app
 								} else if (r == "TREZOR_ERROR") {
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Trezor device error", 'error');
 								} else if (typeof r.errors != 'undefined'){
-									ee = r.errors[0].id.split(".").pop();
+									ee = r.errors[0].id;
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + r.error + ": Error (" + ee + ")", 'error');
 								} else if (typeof r == 'string') {
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " - " + r, 'error');

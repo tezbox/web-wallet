@@ -108,6 +108,7 @@ app
     "ProtoALp" : "Zeronet",
     "PsYLVpVv" : "Mainnet",
     "PsddFKi3" : "Mainnet_003"
+    "Pt24m4xi" : "Mainnet_004"
   }
   
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){

@@ -107,7 +107,7 @@ app
     "PtCJ7pwo" : "Betanet_v1",
     "ProtoALp" : "Zeronet",
     "PsYLVpVv" : "Mainnet",
-    "PsddFKi3" : "Mainnet_003"
+    "PsddFKi3" : "Mainnet_003",
     "Pt24m4xi" : "Mainnet_004"
   }
   

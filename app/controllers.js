@@ -491,7 +491,7 @@ app
 						function(isConfirm){
 							if (isConfirm){
                 var rem = ($scope.max() - $scope.amount);
-                if (rem < 0.257) $scope.amount -= 0.257;
+                if (rem < 0.257) $scope.amount = Math.floor(($scope.amount *1000000) - 257000)/1000000;
 								resolve();
 							}
 						});

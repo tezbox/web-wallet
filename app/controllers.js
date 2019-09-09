@@ -104,12 +104,17 @@ app
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.data, protos = {
-    "PtCJ7pwo" : "Betanet_v1",
-    "ProtoALp" : "Zeronet",
-    "PsYLVpVv" : "Mainnet",
+    "PtCJ7pwo" : "Betanet_001",
+    "PsYLVpVv" : "Mainnet_002",
     "PsddFKi3" : "Mainnet_003",
-    "Pt24m4xi" : "Mainnet_004"
-  }
+    "Pt24m4xi" : "Athens_004",
+    "PsBABY5H" : "Babylon_005",
+  }, 
+	networks = {
+		"NetXdQprcVkpaWU" : "Mainnet",
+		"NetXKakFj1A7ouL" : "Zeronet",
+		"NetXgtSLGNJvNye" : "Alphanet",
+	};
   
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
      return $location.path('/new');
@@ -219,17 +224,22 @@ app
   var refreshHash = function(){
     window.eztz.rpc.getHead().then(function(r){
       $scope.$apply(function(){
+				if (typeof networks[r.chain_id] != 'undefined') {
+					net = Lang.translate("connected_to") + " " + networks[r.chain_id];
+				} else {
+					net = Lang.translate("unknown_network") + " (" + r.chain_id + ")";
+				}
         $scope.block = {
-          net : r.chain_id,
+          net : net,
           level : r.header.level,
-          proto : Lang.translate("connected_to") + " " + (typeof protos[r.protocol.substr(0,8)] != 'undefined' ? protos[r.protocol.substr(0,8)] : r.protocol.substring(0,8)),
+          proto : Lang.translate("protocol") + " " + (typeof protos[r.protocol.substr(0,8)] != 'undefined' ? protos[r.protocol.substr(0,8)] : r.protocol.substring(0,8)),
         };
-				if (r.protocol.substr(0,8) == "ProtoALp") window.eztz.node.setProvider(window.eztz.node.activeProvider, true);
+				if (networks[r.chain_id] == "Zeronet") window.eztz.node.setProvider(window.eztz.node.activeProvider, true);
       });
     }).catch(function(e){
       $scope.$apply(function(){
         $scope.block = {
-          net : "Error",
+          net : Lang.translate("error"),
           level : "N/A",
           proto : Lang.translate("not_connected"),
         };

@@ -9,6 +9,8 @@ app.service('Lang', ["$sce", function($sce) {
     ],
     _translations = {
       "english" : {
+				"error" : "Not connected",
+				"protocol" : "Protocol",
         "first_operation" : "This account hasn't been revealed yet - please use the Medium fee option (5000μꜩ)!",
         "error_please_enter_your_seed_words" : "Please enter your seed words",
         "error_seed_words_not_valid" : "Your seed words are not valid - please check to ensure you are not missing a word/letter, and you haven't included an extra space/line break. All words must be seperated by a space.",
@@ -136,7 +138,7 @@ app.service('Lang', ["$sce", function($sce) {
         "yes_clear_it" : "Yes, clear it!",
         "my_accounts" : "My Accounts",
         "add_account" : "Add Account",
-        "level" : "level",
+        "level" : "Level",
         "disclaimer" : "Disclaimer",
         "terms" : "Terms",
         "privacy" : "Privacy",

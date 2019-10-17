@@ -85,8 +85,6 @@ app.service('Storage', function() {
     };
     r.data.accounts.push(tempaccount);
     r.keys.push(tempkey);
-    console.log(tempkey);
-    console.log(r.keys);
     r.data.account = (r.data.accounts.length-1);
     r.newKey = false;
     tempaccount = '';

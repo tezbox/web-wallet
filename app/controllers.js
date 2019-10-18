@@ -133,6 +133,8 @@ app
   if (!ss || !ss.ensk || Storage.keys.length == 0){
      return $location.path('/new');
   }
+    $scope.version = window.TEZBOX_PLATFORM + "-" + window.TEZBOX_VERSION;
+
   $scope.currentAccount = ss.account;
   $scope.mainAccounts = ss.accounts;
 	$scope.isRevealed = false;
@@ -540,6 +542,7 @@ app
         usd : Lang.translate('loading'),
         raw_balance : Lang.translate('loading'),
     };
+    if ($scope.account == 0){
       window.eztz.rpc.getDelegate($scope.accounts[$scope.account].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
@@ -552,6 +555,7 @@ app
             $scope.delegateType = '';
         });
       });
+    }
     refreshTransactions();
     refreshBalance();
   }

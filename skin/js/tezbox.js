@@ -1,5 +1,4 @@
-var TEZBOX_PLATFORM = "online",
-TEZBOX_VERSION = "5.0.2";
+var TEZBOX_VERSION = "5.0.2";
 
 function showLoader(){
   $('#loadingSpinnerContainer').show();

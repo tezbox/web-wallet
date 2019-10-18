@@ -133,7 +133,7 @@ app
   if (!ss || !ss.ensk || Storage.keys.length == 0){
      return $location.path('/new');
   }
-    $scope.version = window.TEZBOX_PLATFORM + "-" + window.TEZBOX_VERSION;
+    $scope.version = window.TEZBOX_VERSION;
 
   $scope.currentAccount = ss.account;
   $scope.mainAccounts = ss.accounts;

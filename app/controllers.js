@@ -26,6 +26,7 @@ app
     Storage.setSetting($scope.setting);
   }
   window.eztz.node.setProvider($scope.setting.rpc);
+  window.eztz.setProtocol();
   Lang.setLang($scope.setting.language);
   if ($scope.setting.disclaimer) {
     routeUser();
@@ -121,12 +122,12 @@ app
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.data, protos = {
+    "ProtoALp" : "Alpha",
     "PtCJ7pwo" : "Betanet_v1",
-    "ProtoALp" : "Zeronet",
     "PsYLVpVv" : "Mainnet",
-    "PsddFKi3" : "Mainnet_003",
-    "Pt24m4xi" : "Mainnet_004",
-    "PsBabyM1" : "Mainnet_005"
+    "PsddFKi3" : "Mainnet_V2",
+    "Pt24m4xi" : "Athens",
+    "PsBabyM1" : "Babylon 2.0.1"
   }
   $scope.currentProto = '';
   if (!ss || !ss.ensk || Storage.keys.length == 0){
@@ -249,7 +250,6 @@ app
           level : r.header.level,
           proto : Lang.translate("connected_to") + " " + (typeof protos[$scope.currentProto] != 'undefined' ? protos[$scope.currentProto] : $scope.currentProto),
         };
-				if (r.protocol.substr(0,8) == "ProtoALp") window.eztz.node.setProvider(window.eztz.node.activeProvider, true);
       });
     }).catch(function(e){
       $scope.$apply(function(){
@@ -269,7 +269,11 @@ app
   var refreshBalance = function(){
 		if (!$scope.isRevealed){
 			window.eztz.node.query('/chains/main/blocks/head/context/contracts/' + $scope.accounts[0].address + '/manager_key').then(function(r){
-				if (r.key == Storage.keys[$scope.currentAccount].pk) $scope.isRevealed = true;
+        if ($scope.currentProto == 'PsBabyM1'){
+          if (r == Storage.keys[$scope.currentAccount].pk) $scope.isRevealed = true;
+        } else {
+          if (r.key == Storage.keys[$scope.currentAccount].pk) $scope.isRevealed = true;
+        }
 			});
 		}
 		window.eztz.rpc.getBalance($scope.accounts[$scope.account].address).then(function(r){
@@ -489,7 +493,7 @@ app
     $scope.accounts = ss.accounts[ss.account].accounts;
     $scope.account = ss.accounts[ss.account].account;
     $scope.tt = $scope.accounts[$scope.account].title;;
-    $scope.type = Storage.keys[$scope.account].type;
+    $scope.type = Storage.keys[$scope.currentAccount].type;
     if ($scope.type == "ledger" || $scope.type == "trezor"){
       $scope.hd_path = Storage.keys[$scope.currentAccount].sk;
     }
@@ -499,7 +503,6 @@ app
         usd : Lang.translate('loading'),
         raw_balance : Lang.translate('loading'),
     };
-    if ($scope.account !== 0){
       window.eztz.rpc.getDelegate($scope.accounts[$scope.account].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
@@ -512,7 +515,6 @@ app
             $scope.delegateType = '';
         });
       });
-    }
     refreshTransactions();
     refreshBalance();
   }
@@ -527,7 +529,6 @@ app
         usd : Lang.translate('loading'),
         raw_balance : Lang.translate('loading'),
     };
-    if ($scope.account !== 0){
       window.eztz.rpc.getDelegate($scope.accounts[$scope.account].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
@@ -540,7 +541,6 @@ app
             $scope.delegateType = '';
         });
       });
-    }
     refreshTransactions();
     refreshBalance();
   }
@@ -851,6 +851,7 @@ app
   $scope.save = function(){
     Storage.setSetting($scope.setting);
     window.eztz.node.setProvider($scope.setting.rpc);
+    window.eztz.setProtocol();
     return $location.path('/main');
   }
   

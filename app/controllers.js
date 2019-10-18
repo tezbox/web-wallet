@@ -214,7 +214,7 @@ app
   var refreshTransactions = function(){
     var maxTxs = 20;
     //$http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
-    $http.get("https://tzsimple.tulip.tools/v3/operations?delegate="+$scope.accounts[$scope.account].address+"?type=transaction&p=0&number="+ (maxTxs+1)).then(function(r){
+    $http.get("https://tzsimple.tulip.tools/v3/operations/"+$scope.accounts[$scope.account].address+"?type=transaction&p=0&number="+ (maxTxs+1)).then(function(r){
       if (r.status == 200 && r.data.length > 0){
         if (r.data.length > maxTxs) {
           r.data = r.data.slice(0, maxTxs);
@@ -797,7 +797,7 @@ app
   if (Storage.restored){
     window.showLoader();
     //$http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
-    $http.get("https://tzsimple.tulip.tools/v3/operations?delegate="+$scope.accounts[0].address+"?type=origination").then(function(r){
+    $http.get("https://tzsimple.tulip.tools/v3/operations/"+$scope.accounts[0].address+"?type=origination").then(function(r){
       window.hideLoader();
       if (r.status == 200 && r.data.length > 0){
         SweetAlert.swal({

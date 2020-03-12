@@ -109,6 +109,7 @@ app
     "PsddFKi3" : "Mainnet_003",
     "Pt24m4xi" : "Athens_004",
     "PsBABY5H" : "Babylon_005",
+    "PsCARTHA" : "Cartharage",
   }, 
 	networks = {
 		"NetXdQprcVkpaWU" : "Mainnet",
@@ -152,6 +153,7 @@ app
   $scope.delegates = {
     keys : [
     'false',
+    'tz1P2Po7YM526ughEsRbY4oR9zaUPDZjxFrb',
     'tz1QLXqnfN51dkjeghXvKHkJfhvGiM5gK4tc',
     'tz1d6Fx42mYgVFnHUW8T8A7WBfJ6nD9pVok8',
     'tz1cX93Q3KsiTADpCC4f12TBvAmS5tw7CW19',
@@ -165,6 +167,7 @@ app
     ],
     names : [
       'Undelegated',
+      'P2P Validator',
       'Fresh Tezos',
       'My Tezos Baking',
       'Tz Bakery',

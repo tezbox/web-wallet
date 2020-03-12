@@ -1,5 +1,6 @@
 app
 .controller('NewController', ['$scope', '$location', 'Storage', 'Lang', function($scope, $location, Storage, Lang) {
+  
   var routeUser = function(){
     if (Storage.loaded && typeof Storage.keys.sk != 'undefined'){
         return $location.path('/main');
@@ -26,7 +27,6 @@ app
     Storage.setSetting($scope.setting);
   }
   window.eztz.node.setProvider($scope.setting.rpc);
-  window.eztz.setProtocol();
   Lang.setLang($scope.setting.language);
   if ($scope.setting.disclaimer) {
     routeUser();
@@ -53,12 +53,9 @@ app
 .controller('CreateController', ['$scope', '$location', 'Storage', '$sce', function($scope, $location, Storage, $sce) {
   $scope.passphrase = '';
   $scope.mnemonic = '';
+  
   $scope.cancel = function(){
-    if (Storage.keys.length == 0){
-      return $location.path('/new');
-    } else {
-      return $location.path('/main');
-    }
+    return $location.path('/new');
   };
   $scope.newMnemonic = function(){
    $scope.mnemonic = window.eztz.crypto.generateMnemonic();
@@ -72,10 +69,10 @@ app
     keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh, type : "encrypted"};
     var identity = {
       pkh : keys.pkh,
-      accounts : [{title: "Manager " + (Storage.keys.length+1), address : keys.pkh, public_key : keys.pk}],
+      accounts : [{title: "Main", address : keys.pkh, public_key : keys.pk}],
       account : 0
     };
-    Storage.newAccount(identity, keys);
+    Storage.setStore(identity, keys);
     return $location.path("/validate");
   };
   
@@ -83,40 +80,25 @@ app
 }])
 .controller('ValidateController', ['$scope', '$location', 'Storage', '$sce', 'SweetAlert', 'Lang', function($scope, $location, Storage, $sce, SweetAlert, Lang) {
   var ss = Storage.data;
-  if (!Storage.newKey){
-    return $location.path('/new');
+  if (Storage.data.ensk && typeof Storage.keys.sk != 'undefined'){
+    return $location.path('/main');
+  }  else if (Storage.data.ensk){
+    return $location.path('/unlock');
   }
 
   $scope.passphrase = '';
   $scope.mnemonic = '';
   
   $scope.cancel = function(){
-    Storage.clearNewAccount();
-    if (Storage.keys.length == 0){
-      return $location.path('/new');
-    } else {
-      return $location.path('/main');
-    }
+    Storage.clearStore();
+    return $location.path('/new');
   };  
   $scope.validate = function(){
     var keys = window.eztz.crypto.generateKeys($scope.mnemonic, $scope.passphrase);
-    if (!Storage.checkNewPkh(keys.pkh)) {
+    if (keys.pkh != ss.pkh) {
       SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('details_dont_match'), 'error');
-    } else {
-      Storage.addNewAccount();
-      ss = Storage.data;
-      if (Storage.keys.length <= 1){
-        return $location.path("/encrypt");
-      } else {
-        window.showLoader();
-        setTimeout(function(){
-          $scope.$apply(function(){
-            ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync(Storage.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));;
-            Storage.setStore(ss);
-            return $location.path("/main");
-          });
-        }, 100);
-      }
+    } else {        
+      return $location.path("/encrypt");
     }
   };
 }])
@@ -127,7 +109,6 @@ app
     "PsddFKi3" : "Mainnet_003",
     "Pt24m4xi" : "Athens_004",
     "PsBABY5H" : "Babylon_005",
-    "PsCARTHA" : "Carthrage_006",
   }, 
 	networks = {
 		"NetXdQprcVkpaWU" : "Mainnet",
@@ -138,29 +119,22 @@ app
   if (!ss || !ss.ensk || typeof Storage.keys.sk == 'undefined'){
      return $location.path('/new');
   }
-    $scope.version = window.TEZBOX_VERSION;
-
-  $scope.currentAccount = ss.account;
-  $scope.mainAccounts = ss.accounts;
-	$scope.isRevealed = false;
-  $scope.type = Storage.keys[ss.account].type;
+  if (typeof ss.temp != 'undefined') delete ss.temp;
   
-  $scope.hd_path = '';
-  if ($scope.type == "ledger" || $scope.type == "trezor"){
-    $scope.hd_path = Storage.keys[$scope.currentAccount].sk;
-  }
+	$scope.isRevealed = false;
+  $scope.type = Storage.keys.type;
   $scope.setting = Storage.loadSetting();
-  $scope.accounts = ss.accounts[ss.account].accounts;
-  $scope.account = ss.accounts[ss.account].account;
+  $scope.accounts = ss.accounts;
+  $scope.account = ss.account;
   $scope.accountLive = true;
   $scope.accountDetails = {};
   $scope.tt = $scope.accounts[$scope.account].title;
   $scope.transactions = [];
   $scope.amount = 0;
-  $scope.fee = 2500;
-  $scope.customFee = 2500;
+  $scope.fee = 1420;
+  $scope.customFee = 1420;
   $scope.advancedOptions = false;
-  $scope.gas_limit = 18000;
+  $scope.gas_limit = 10600;
   $scope.storage_limit = 300;
   $scope.parameters = '';
   $scope.delegateType = 'undelegated';
@@ -220,18 +194,14 @@ app
   }
   var refreshTransactions = function(){
     var maxTxs = 20;
-    //$http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
-    //$http.get("https://tzsimple.tulip.tools/v3/operations/"+$scope.accounts[0].address+"?type=transaction").then(function(r){
-
-    $http.get("https://mystique.tzkt.io/v3/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction").then(function(r){
+    $http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[$scope.account].address+"?type=Transaction&p=0&number="+ (maxTxs+1)).then(function(r){
       if (r.status == 200 && r.data.length > 0){
         if (r.data.length > maxTxs) {
-          r.data = r.data.slice(-maxTxs);
+          r.data = r.data.slice(0, maxTxs);
           $scope.moreTxs = true;
         } else {
           $scope.moreTxs = false;
         }
-        r.data = r.data.reverse();
         var txs = [];
         for(var i = 0; i < r.data.length; i++){
           for(var j = 0; j < r.data[i].type.operations.length; j++){
@@ -284,11 +254,7 @@ app
   var refreshBalance = function(){
 		if (!$scope.isRevealed){
 			window.eztz.node.query('/chains/main/blocks/head/context/contracts/' + $scope.accounts[0].address + '/manager_key').then(function(r){
-        if ($scope.currentProto == 'PsBabyM1'){
-          if (r == Storage.keys[$scope.currentAccount].pk) $scope.isRevealed = true;
-        } else {
-          if (r.key == Storage.keys[$scope.currentAccount].pk) $scope.isRevealed = true;
-        }
+				if (r.key == Storage.keys.pk) $scope.isRevealed = true;
 			});
 		}
 		window.eztz.rpc.getBalance($scope.accounts[$scope.account].address).then(function(r){
@@ -319,7 +285,7 @@ app
               cancelled = true;
             }
           });
-          return window.tezledger.sign(Storage.keys[$scope.currentAccount].sk, "03"+r.opbytes).then(function(rr){
+          return window.tezledger.sign(Storage.keys.sk, "03"+r.opbytes).then(function(rr){
             r.opOb.signature = window.eztz.utility.b58cencode(window.eztz.utility.hex2buf(rr.signature), window.eztz.prefix.edsig);
             if (!cancelled) return window.eztz.rpc.inject(r.opOb, r.opbytes + rr.signature);
           });
@@ -351,7 +317,7 @@ app
                   }
                 });
                 var tops = eztz.trezor.operation(r);
-                window.teztrezor.sign(Storage.keys[$scope.currentAccount].sk, eztz.utility.b58cdecode(r.opOb.branch, eztz.prefix.b), tops[0], tops[1]).then(function(rr){
+                window.teztrezor.sign(Storage.keys.sk, eztz.utility.b58cdecode(r.opOb.branch, eztz.prefix.b), tops[0], tops[1]).then(function(rr){
                   r.opOb.signature = rr.signature;
                   if (!cancelled){
                     resolve(window.eztz.rpc.inject(r.opOb, eztz.utility.buf2hex(rr.sigOpContents)));      
@@ -379,7 +345,7 @@ app
   $scope.showPrivatekey = function(){
     if (!$scope.password) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('please_enter_password'), 'error');
     if ($scope.password == Storage.password) {
-      $scope.privateKey = Storage.keys[$scope.currentAccount].sk;
+      $scope.privateKey = Storage.keys.sk;
     } else { 
       SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'), 'error');
     }
@@ -410,7 +376,7 @@ app
   }
   $scope.lock = function(){
       clearInterval(ct);
-      Storage.keys = [];
+      Storage.keys = {};
       return $location.path('/unlock');
   } 
   $scope.saveTitle = function(){
@@ -419,22 +385,18 @@ app
         return;
     }
     $scope.accounts[$scope.account].title = $scope.tt;
-    $scope.mainAccounts[$scope.currentAccount].accounts = $scope.accounts;
-    ss.accounts = $scope.mainAccounts;
+    ss.accounts = $scope.accounts;
     Storage.setStore(ss);
     $scope.refresh();
   };   
-    
-  $scope.sideTog = function(){
-    window.toggleSide();
-  }
   $scope.import = function(){
     if (!$scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_address'), 'error');
-
+    for(var i = 0; i < $scope.accounts.length; i++){
+      if ($scope.accounts[i].address == $scope.kt1) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_linked'), 'error');
+    }
     window.showLoader();
     
-    window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1).then(function(r){
-      r = r.script.storage.string;
+    window.eztz.node.query("/chains/main/blocks/head/context/contracts/"+$scope.kt1+"/manager").then(function(r){
       if (r != $scope.accounts[0].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_kt1_manager'), 'error');
       $scope.$apply(function(){
         $scope.accounts.push(
@@ -444,102 +406,43 @@ app
           }
         );
         $scope.account = ($scope.accounts.length-1);
-        $scope.mainAccounts[$scope.currentAccount].account = $scope.account;
-        $scope.mainAccounts[$scope.currentAccount].accounts = $scope.accounts;
-        ss.accounts = $scope.mainAccounts;
+        ss.accounts = $scope.accounts;
+        ss.account = $scope.account;
         Storage.setStore(ss);
         $scope.refresh();
         $scope.kt1 = '';
         window.hideLoader();
       })
-      return true;
-    })
+    }).catch(function(r){
+      window.hideLoader();
+      SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_importing'), 'error');
+    });
   };   
   $scope.remove = function(){
-    if ($scope.account === 0) {
-      if ($scope.mainAccounts.length <= 1) {
-        SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('last_account_error'), 'error');
-      } else {
-        SweetAlert.swal({
-          title: Lang.translate('are_you_sure'),
-          text: Lang.translate('remove_account_warning'),
-          type : "warning",
-          showCancelButton: true,
-          confirmButtonText: Lang.translate('yes_remove_it'),
-          closeOnConfirm: true
-        },
-        function(isConfirm){
-          if (isConfirm){
-            $scope.mainAccounts.splice($scope.currentAccount, 1);
-            $scope.currentAccount = 0;
-            ss.accounts = $scope.mainAccounts;
-            ss.account = $scope.currentAccount;
-            Storage.setStore(ss);
-            $scope.refresh();
-          }
-        });
+    if ($scope.account === 0) return;
+    SweetAlert.swal({
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('remove_account_warning'),
+      type : "warning",
+      showCancelButton: true,
+      confirmButtonText: Lang.translate('yes_remove_it'),
+      closeOnConfirm: true
+    },
+    function(isConfirm){
+      if (isConfirm){
+        $scope.accounts.splice($scope.account, 1);
+        $scope.account = 0;
+        ss.accounts = $scope.accounts;
+        ss.account = $scope.account;
+        Storage.setStore(ss);
+        $scope.refresh();
       }
-    } else {
-      
-      SweetAlert.swal({
-        title: Lang.translate('are_you_sure'),
-        text: Lang.translate('remove_conract_warning'),
-        type : "warning",
-        showCancelButton: true,
-        confirmButtonText: Lang.translate('yes_remove_it'),
-        closeOnConfirm: true
-      },
-      function(isConfirm){
-        if (isConfirm){
-          $scope.accounts.splice($scope.account, 1);
-          $scope.account = 0;
-          $scope.mainAccounts[$scope.currentAccount].accounts = $scope.accounts;
-          $scope.mainAccounts[$scope.currentAccount].account = $scope.account;
-          ss.accounts = $scope.mainAccounts;
-          Storage.setStore(ss);
-          $scope.refresh();
-        }
-      });
-    }
+    });
   };
-  $scope.loadManager = function(a){
-    $scope.currentAccount = a;
-    $scope.transactions = [];
-    ss.account = $scope.currentAccount;
-    $scope.accounts = ss.accounts[ss.account].accounts;
-    $scope.account = ss.accounts[ss.account].account;
-    $scope.tt = $scope.accounts[$scope.account].title;;
-    $scope.type = Storage.keys[$scope.currentAccount].type;
-    if ($scope.type == "ledger" || $scope.type == "trezor"){
-      $scope.hd_path = Storage.keys[$scope.currentAccount].sk;
-    }
-    Storage.setStore(ss);
-    $scope.accountDetails = {
-        balance : Lang.translate('loading'),
-        usd : Lang.translate('loading'),
-        raw_balance : Lang.translate('loading'),
-    };
-    $scope.delegateType = 'undelegated';
-    $scope.dd = '';
-    window.eztz.rpc.getDelegate($scope.accounts[$scope.account].address).then(function(r){
-      $scope.$apply(function(){
-        $scope.dd = r;
-        if ($scope.delegates.keys.indexOf($scope.dd) >= 0){
-          $scope.delegateType = $scope.dd;
-        } else if (!$scope.dd){
-          $scope.delegateType = 'undelegated';
-          $scope.dd = '';
-        } else
-          $scope.delegateType = '';
-      });
-    }).catch();
-    refreshTransactions();
-    refreshBalance();
-  }
   $scope.loadAccount = function(a){
     $scope.account = a;
     $scope.transactions = [];
-    ss.accounts[$scope.currentAccount].account = $scope.account
+    ss.account = $scope.account
     $scope.tt = $scope.accounts[$scope.account].title;;
     Storage.setStore(ss);
     $scope.accountDetails = {
@@ -547,7 +450,7 @@ app
         usd : Lang.translate('loading'),
         raw_balance : Lang.translate('loading'),
     };
-    if ($scope.account == 0){
+    if ($scope.account !== 0){
       window.eztz.rpc.getDelegate($scope.accounts[$scope.account].address).then(function(r){
         $scope.$apply(function(){
           $scope.dd = r;
@@ -573,8 +476,8 @@ app
   };
   $scope.clear = function(){
     $scope.amount = 0;
-    $scope.customFee = 2500;
-    $scope.fee = 2500;
+    $scope.customFee = 1420;
+    $scope.fee = 1420;
     $scope.toaddress = '';
     $scope.parameters = '';
     $scope.showAccounts = false;
@@ -616,10 +519,6 @@ app
 	}
   //on-chain functions
   $scope.send = function(){
-    var ktsend = false;
-    if ($scope.accounts[$scope.account].address.substr(0,1) == "K") {
-      var ktsend = true;      
-    }
     var fee = ($scope.showCustom ? $scope.customFee : $scope.fee);
     if (!$scope.toaddress || ($scope.toaddress.substring(0, 2) !=  "tz" && $scope.toaddress.substring(0, 3) !=  "KT1")) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_valid_destinaton'), 'error');
     if ($scope.toaddress == $scope.accounts[$scope.account].address) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_send_self'));
@@ -629,16 +528,7 @@ app
     if ($scope.amount != parseFloat($scope.amount)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_amount'), 'error');
     if (fee != parseInt(fee)) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_invalid_fee'), 'error');
     
-    var sendParams = false;
-    if (!ktsend){
-      if (!$scope.isRevealed && fee < 2689) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('first_operation'), 'error');
-      if ($scope.parameters){
-        sendParams = $scope.parameters;
-      }
-    } else {
-       if ($scope.parameters) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_param_send'), 'error');
-       sendParams = window.managerOps.transfer($scope.toaddress, $scope.amount);
-    }
+    if (!$scope.isRevealed && fee < 2689) return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('first_operation'), 'error');
     
 		var check = checkAddress($scope.toaddress);
 		check.then(function(){
@@ -654,17 +544,16 @@ app
 				if (isConfirm){
 					window.showLoader();
 					var keys = {
-						sk : Storage.keys[$scope.currentAccount].sk,
-						pk : Storage.keys[$scope.currentAccount].pk,
-						pkh : Storage.keys[$scope.currentAccount].pk
+						sk : Storage.keys.sk,
+						pk : Storage.keys.pk,
+						pkh : $scope.accounts[$scope.account].address,
 					};
 					if ($scope.type != "encrypted") keys.sk = false;
-          
-          if (!ktsend){
-            var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, sendParams, $scope.gas_limit, $scope.storage_limit, 0);
-          } else {
-            var op = window.eztz.rpc.transfer($scope.accounts[0].address, keys, $scope.accounts[$scope.account].address, 0, fee, sendParams, $scope.gas_limit, $scope.storage_limit, 0);
-          }
+					if ($scope.parameters){
+						var op = window.eztz.contract.send($scope.toaddress, $scope.accounts[$scope.account].address, keys, $scope.amount, $scope.parameters, fee, $scope.gas_limit, $scope.storage_limit);
+					} else {
+						var op = window.eztz.rpc.transfer($scope.accounts[$scope.account].address, keys, $scope.toaddress, $scope.amount, fee, false, $scope.gas_limit, $scope.storage_limit, 0);
+					}
 					
 					var cancelled = false;
 					if ($scope.type != "encrypted"){
@@ -681,7 +570,6 @@ app
 							}
 						});
 					}).catch(function(r){
-            console.log("SEND ERROR", r);
 						$scope.$apply(function(){
 							if (!cancelled){
 								window.hideLoader();
@@ -693,7 +581,7 @@ app
 								} else if (r == "TREZOR_ERROR") {
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " " + "Trezor device error", 'error');
 								} else if (typeof r.errors != 'undefined'){
-									ee = r.errors[0].id.substr(19);//split(".").pop();
+									ee = r.errors[0].id.split(".").pop();
 									SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": " + ee, 'error');
 								} else if (typeof r == 'string') {
 									SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('operation_failed') + " - " + r, 'error');
@@ -721,8 +609,8 @@ app
       
       window.showLoader();
       var keys = {
-        sk : Storage.keys[$scope.currentAccount].sk,
-        pk : Storage.keys[$scope.currentAccount].pk,
+        sk : Storage.keys.sk,
+        pk : Storage.keys.pk,
         pkh : $scope.accounts[$scope.account].address,
       };
       if ($scope.type != "encrypted") keys.sk = false;
@@ -738,7 +626,7 @@ app
           window.hideLoader();
           if (!cancelled){
             SweetAlert.swal(Lang.translate('awesome'), Lang.translate('delegation_success'), "success");
-            $scope.fee = 2500;
+            $scope.fee = 1420;
           }
         });
       }).catch(function(r){
@@ -756,84 +644,67 @@ app
         });
       });
   }
-  $scope.createManager = function(){
-    return $location.path('/create');
-  };
-  $scope.restoreManager = function(){
-    return $location.path('/restore');
-    
-  };
-  $scope.linkManager = function(){
-    return $location.path('/link');
-  };
   $scope.add = function(){
-    if ($scope.currentProto == 'PsBabyM1') {
-      return SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_baby_originate'), 'error');
-    } else {
-      SweetAlert.swal({
-        title: Lang.translate('are_you_sure'),
-        text: Lang.translate('originate_warning'),
-        type : "warning",
-        showCancelButton: true,
-        confirmButtonText: Lang.translate('yes_continue'),
-        closeOnConfirm: true
-      },
-      function(isConfirm){
-        if (isConfirm){
-          window.showLoader();
-          var keys = {
-            sk : Storage.keys[$scope.currentAccount].sk,
-            pk : Storage.keys[$scope.currentAccount].pk,
-            pkh : $scope.accounts[0].address,
-          };
-          if ($scope.type != "encrypted") keys.sk = false;
-          var op = window.eztz.rpc.account(keys, 0, true, true, false, 1731)
-          
-          var cancelled = false;
-          if ($scope.type != "encrypted"){
-            op = remoteSign($scope.type, op);
-          }
-          
-          op.then(function(r){
-            $scope.$apply(function(){
-              var address = window.eztz.contract.hash(r.hash, 0);
-              if ($scope.accounts[$scope.accounts.length-1].address != address){
-                $scope.accounts.push(
-                  {
-                    title : "Contract " + ($scope.accounts.length),
-                    address : address
-                  }
-                );
-                $scope.account = ($scope.accounts.length-1);
-                $scope.mainAccounts[$scope.currentAccount].accounts = $scope.accounts;
-                $scope.mainAccounts[$scope.currentAccount].account = $scope.account;
-                ss.accounts = $scope.mainAccounts;
-                Storage.setStore(ss);
-                SweetAlert.swal(Lang.translate('awesome'), Lang.translate('new_account_originated'), "success");
-              } else {
-                SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_origination_awaiting'), 'error');
-              }
-              $scope.refresh();
-              window.hideLoader();
-            });
-          }).catch(function(r){
-            window.hideLoader();
-            if (typeof r.errors !== 'undefined'){
-              ee = r.errors[0].id.split(".").pop();
-              SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": Error (" + ee + ")", 'error');
-            } else SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('origination_error'), 'error');
-          });
+    SweetAlert.swal({
+      title: Lang.translate('are_you_sure'),
+      text: Lang.translate('originate_warning'),
+      type : "warning",
+      showCancelButton: true,
+      confirmButtonText: Lang.translate('yes_continue'),
+      closeOnConfirm: true
+    },
+    function(isConfirm){
+      if (isConfirm){
+        window.showLoader();
+        var keys = {
+          sk : Storage.keys.sk,
+          pk : Storage.keys.pk,
+          pkh : $scope.accounts[0].address,
+        };
+        if ($scope.type != "encrypted") keys.sk = false;
+        var op = window.eztz.rpc.account(keys, 0, true, true, false, (window.eztz.node.isZeronet ? 100000 : 1731))
+        
+        var cancelled = false;
+        if ($scope.type != "encrypted"){
+          op = remoteSign($scope.type, op);
         }
-      });
-    }
+        
+        op.then(function(r){
+          $scope.$apply(function(){
+            var address = window.eztz.contract.hash(r.hash, 0);
+            if ($scope.accounts[$scope.accounts.length-1].address != address){
+              $scope.accounts.push(
+                {
+                  title : "Account " + ($scope.accounts.length),
+                  address : address
+                }
+              );
+              $scope.account = ($scope.accounts.length-1);
+              ss.accounts = $scope.accounts;
+              ss.account = $scope.account;
+              Storage.setStore(ss);
+              SweetAlert.swal(Lang.translate('awesome'), Lang.translate('new_account_originated'), "success");
+            } else {
+              SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('error_origination_awaiting'), 'error');
+            }
+            $scope.refresh();
+            window.hideLoader();
+          });
+        }).catch(function(r){
+          window.hideLoader();
+          if (typeof r.errors !== 'undefined'){
+            ee = r.errors[0].id.split(".").pop();
+            SweetAlert.swal(Lang.translate('uh_oh'), r.error + ": Error (" + ee + ")", 'error');
+          } else SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('origination_error'), 'error');
+        });
+      }
+    });
   };
   
   //init
   if (Storage.restored){
     window.showLoader();
-    //$http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
-    $http.get("https://tzsimple.tulip.tools/v3/operations/"+$scope.accounts[0].address+"?type=origination").then(function(r){
-    //$http.get("https://mystique.tzkt.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
+    $http.get("https://api1.tzscan.io/v1/operations/"+$scope.accounts[0].address+"?type=Origination").then(function(r){
       window.hideLoader();
       if (r.status == 200 && r.data.length > 0){
         SweetAlert.swal({
@@ -850,14 +721,13 @@ app
               for(var j = 0; j < r.data[i].type.operations.length; j++){
                 $scope.accounts.push(
                   {
-                    title : "Contract " + ($scope.accounts.length),
-                    address : eztz.contract.hash(r.data[i].hash, 0)
+                    title : "Account " + ($scope.accounts.length),
+                    address : r.data[i].type.operations[j].tz1.tz
                   }
                 );
               }
             }
-            $scope.mainAccounts[$scope.currentAccount].accounts = $scope.accounts;
-            ss.accounts = $scope.mainAccounts;
+            ss.accounts = $scope.accounts;
             Storage.setStore(ss);
             $scope.refresh();
           }
@@ -887,7 +757,6 @@ app
   $scope.save = function(){
     Storage.setSetting($scope.setting);
     window.eztz.node.setProvider($scope.setting.rpc);
-    window.eztz.setProtocol();
     return $location.path('/main');
   }
   
@@ -917,46 +786,35 @@ app
     setTimeout(function(){
       $scope.$apply(function(){
         try {
-          var sk = sjcl.decrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, ss.accounts[0].pkh, 30000, 512, 'sha512').toString(), ss.ensk);
-          if (typeof ss.oldEnsk != 'undefined'){
-            //Legacy
-            var type = sk.substr(0,4);
-            if (type == "edsk") { 
-              var c = window.eztz.crypto.extractKeys(sk);			
-              c.type = "encrypted";		
-            } else {
-              var c = {
-                pk : ss.accounts[0].public_key,
-                pkh : ss.pkh,
-                sk : sk.substr(4),
-              };
-              if (type == "ledg"){
-                c.type = "ledger";
-              } else if (type == "trez"){
-                c.type = "trezor";
-              } else if (type == "offl"){
-                c.type = "offline";
-              } else {
-                //Legacy
-                c.type = "ledger";
-                c.sk = sk;
-              }
-            }
-            Storage.keys = [c];
-            //Update storage
-            var newensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));
-            delete ss.oldEnsk;
-            ss.ensk = newensk;
-            Storage.setStore(ss);
+          var sk = sjcl.decrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, ss.pkh, 30000, 512, 'sha512').toString(), ss.ensk);
+          var type = sk.substr(0,4);
+					if (type == "edsk") { 
+						var c = window.eztz.crypto.extractKeys(sk);			
+						c.type = "encrypted";		
           } else {
-            var keys = JSON.parse(atob(sk));
-            Storage.keys = keys;
+						var c = {
+							pk : ss.accounts[0].public_key,
+							pkh : ss.pkh,
+							sk : sk.substr(4),
+						};
+						if (type == "ledg"){
+							c.type = "ledger";
+						} else if (type == "trez"){
+							c.type = "trezor";
+						} else if (type == "offl"){
+							c.type = "offline";
+						} else {
+							//Legacy
+							c.type = "ledger";
+							c.sk = sk;
+						}
           }
         } catch(err){
           window.hideLoader();
           SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('incorrect_password'), 'error');
           return;
         }
+        Storage.keys = c;
         Storage.password = $scope.password;
         return $location.path('/main');
       });
@@ -965,7 +823,7 @@ app
 }])
 .controller('EncryptController', ['$scope', '$location', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, Storage, SweetAlert, Lang) {
   var ss = Storage.data;
-  if (Storage.keys.length !== 1) return $location.path('/new');
+  if (typeof Storage.keys.sk == 'undefined') return $location.path('/new');
   $scope.password = '';
   $scope.password2 = '';
   
@@ -986,8 +844,13 @@ app
     window.showLoader();
     setTimeout(function(){
       $scope.$apply(function(){
-        ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));
-        Storage.setStore(ss);
+        var identity = {
+          ensk : sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync($scope.password, Storage.keys.pkh, 30000, 512, 'sha512').toString(), (Storage.keys.type == "encrypted" ? Storage.keys.sk : Storage.keys.type.substr(0,4) + Storage.keys.sk)),
+          pkh : ss.pkh,
+          accounts : ss.accounts,
+          account : ss.account
+        };
+        Storage.setStore(identity);
         Storage.password = $scope.password;            
         return $location.path("/main");
       });
@@ -1005,11 +868,7 @@ app
   $scope.data = "44'/1729'/0'/0'";
   
   $scope.cancel = function(){
-    if (Storage.keys.length == 0){
       return $location.path('/new');
-    } else {
-      return $location.path('/main');
-    }
   };
   $scope.link = function(){
 
@@ -1060,34 +919,23 @@ app
         SweetAlert.swal(Lang.translate('awesome'), Lang.translate('ledger_retreived_address') + ": "+address+"!", "success");
         var identity = {
             pkh : address,
-            accounts : [{title: "Manager " + (Storage.keys.length+1), address :address, public_key : pk}],
+            accounts : [{title: "Main", address :address, public_key : pk}],
             account : 0
         };
-        Storage.restored = true;
-        Storage.addNewAccount(identity, {
+        Storage.setStore(identity, {
           pk : pk,
           pkh : address,
           sk : $scope.data,
           type : $scope.type
-        });
-        
-        ss = Storage.data;
-        if (Storage.keys.length <= 1){
-          window.hideLoader();
-          return $location.path("/encrypt");
-        } else {
-          setTimeout(function(){
-            $scope.$apply(function(){
-              ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync(Storage.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));;
-              Storage.setStore(ss);
-              return $location.path("/main");
-            });
-          }, 100);
-        }
+        });   
+        window.hideLoader();
+        Storage.restored = true;
+        return $location.path("/encrypt");
       });
     }).catch(function(e){
       if (cancelled) return;
       window.hideLoader();
+      console.log(e);
       if ($scope.type == 'trezor'){
         SweetAlert.swal(Lang.translate('uh_oh'), Lang.translate('trezor_error_connect'), 'error');
       } else if ($scope.type == 'trezor'){
@@ -1105,17 +953,10 @@ app
   $scope.email = '';
   $scope.ico_password = '';
   $scope.activation_code = '';
-  $scope.link = function(){
-    return $location.path('/link');
-  };
-  $scope.cancel = function(){
-    if (Storage.keys.length == 0){
-      return $location.path('/new');
-    } else {
-      return $location.path('/main');
-    }
-  };
   
+  $scope.cancel = function(){
+      return $location.path('/new');
+  };
   $scope.isEdesk = function(){
     return ($scope.private_key.substring(0, 5) == "edesk");
   };
@@ -1123,7 +964,7 @@ app
     var keys = {sk : keys.sk, pk : keys.pk, pkh : keys.pkh, type : "encrypted"};
     var identity = {
       pkh : keys.pkh,
-      accounts : [{title: "Manager " + (Storage.keys.length+1), address : keys.pkh, public_key : keys.pk}],
+      accounts : [{title: "Main", address : keys.pkh, public_key : keys.pk}],
       account : 0
     };
     if ($scope.type == 'ico' && $scope.activation_code){
@@ -1135,21 +976,7 @@ app
           SweetAlert.swal(Lang.translate('awesome'), Lang.translate('activation_successful'), "success");
           Storage.ico = true;
           Storage.restored = true;
-          Storage.newAccount(identity, keys);
-          Storage.addNewAccount();
-          ss = Storage.data;
-          if (Storage.keys.length <= 1){
-            return $location.path("/encrypt");
-          } else {
-            window.showLoader();
-            setTimeout(function(){
-              $scope.$apply(function(){
-                ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync(Storage.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));;
-                Storage.setStore(ss);
-                return $location.path("/main");
-              });
-            }, 100);
-          }
+          return $location.path("/encrypt");
         });
       }).catch(function(e){
         $scope.$apply(function(){
@@ -1158,21 +985,9 @@ app
         });
       });
     } else {
+      Storage.setStore(identity, keys);   
       Storage.restored = true;
-      Storage.addNewAccount(identity, keys);
-      ss = Storage.data;
-      if (Storage.keys.length <= 1){
-        return $location.path("/encrypt");
-      } else {
-        window.showLoader();
-        setTimeout(function(){
-          $scope.$apply(function(){
-            ss.ensk = sjcl.encrypt(window.eztz.library.pbkdf2.pbkdf2Sync(Storage.password, Storage.keys[0].pkh, 30000, 512, 'sha512').toString(), btoa(JSON.stringify(Storage.keys)));;
-            Storage.setStore(ss);
-            return $location.path("/main");
-          });
-        }, 100);
-      }
+      return $location.path("/encrypt");
     }
   }
   $scope.restore = function(){

@@ -122,19 +122,20 @@ app
 }])
 .controller('MainController', ['$scope', '$location', '$http', 'Storage', 'SweetAlert', 'Lang', function($scope, $location, $http, Storage, SweetAlert, Lang) {
   var ss = Storage.data, protos = {
-    "PtCJ7pwo" : "Betanet_001",
-    "PsYLVpVv" : "Mainnet_002",
-    "PsddFKi3" : "Mainnet_003",
-    "Pt24m4xi" : "Athens_004",
-    "PsBABY5H" : "Babylon_005",
-    "PsCARTHA" : "Carthrage_006",
+    "ProtoALp" : "Alpha",
+    "PtCJ7pwo" : "Betanet_v1",
+    "PsYLVpVv" : "Mainnet",
+    "PsddFKi3" : "Mainnet_V2",
+    "Pt24m4xi" : "Athens",
+    "PsBabyM1" : "Babylon 2.0.1"
+    "PsCARTHA" : "Carthrage",
   }, 
 	networks = {
 		"NetXdQprcVkpaWU" : "Mainnet",
 		"NetXKakFj1A7ouL" : "Zeronet",
 		"NetXgtSLGNJvNye" : "Alphanet",
 	};
-  
+  $scope.currentProto = '';
   if (!ss || !ss.ensk || Storage.keys.length == 0){
      return $location.path('/new');
   }
@@ -261,17 +262,23 @@ app
 				} else {
 					net = Lang.translate("unknown_network") + " (" + r.chain_id + ")";
 				}
+        $scope.currentProto = r.protocol.substr(0,8);
+        if (window.eztz.getProtocol().substr(0,8) != $scope.currentProto){
+          console.log("PROTOCOL CHANGED TO " + $scope.currentProto);
+          window.eztz.setProtocol();
+        }
+        $scope.currentProto
         $scope.block = {
           net : net,
+          net : r.chain_id,
           level : r.header.level,
-          proto : Lang.translate("protocol") + " " + (typeof protos[r.protocol.substr(0,8)] != 'undefined' ? protos[r.protocol.substr(0,8)] : r.protocol.substring(0,8)),
+          proto : Lang.translate("connected_to") + " " + (typeof protos[$scope.currentProto] != 'undefined' ? protos[$scope.currentProto] : $scope.currentProto),
         };
-				if (networks[r.chain_id] == "Zeronet") window.eztz.node.setProvider(window.eztz.node.activeProvider, true);
       });
     }).catch(function(e){
       $scope.$apply(function(){
         $scope.block = {
-          net : Lang.translate("error"),
+          net : "Error",
           level : "N/A",
           proto : Lang.translate("not_connected"),
         };

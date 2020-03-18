@@ -128,7 +128,7 @@ app
     "PsddFKi3" : "Mainnet_V2",
     "Pt24m4xi" : "Athens",
     "PsBabyM1" : "Babylon 2",
-    "PsCARTHA" : "Carthrage",
+    "PsCARTHA" : "Carthage",
   }, 
 	networks = {
 		"NetXdQprcVkpaWU" : "Mainnet",

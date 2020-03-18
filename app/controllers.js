@@ -127,7 +127,7 @@ app
     "PsYLVpVv" : "Mainnet",
     "PsddFKi3" : "Mainnet_V2",
     "Pt24m4xi" : "Athens",
-    "PsBabyM1" : "Babylon 2.0.1"
+    "PsBabyM1" : "Babylon 2",
     "PsCARTHA" : "Carthrage",
   }, 
 	networks = {

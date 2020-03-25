@@ -190,6 +190,7 @@ app
     'tz1iJ4qgGTzyhaYEzd1RnC6duEkLBd1nzexh',
     'tz1Scdr2HsZiQjc7bHMeBbmDRXYVvdhjJbBh',
     'tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q',
+    'tz1RV1MBbZMR68tacosb7Mwj6LkbPSUS1er1',
     ],
     names : [
       'Undelegated',
@@ -204,6 +205,7 @@ app
       'Tz Envoy',
       'Figment',
       'HappyTezos',
+      'Baking Tacos',
     ]
   };
   $scope.privateKey = '';
